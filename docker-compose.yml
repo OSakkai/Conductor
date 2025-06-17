@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # Banco de Dados MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: lab-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - lab-network
+
+  # Backend NestJS
+  backend:
+    build: ./backend
+    container_name: lab-backend
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    environment:
+      - NODE_ENV=${NODE_ENV}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_DATABASE=${DB_DATABASE}
+      - JWT_SECRET=${JWT_SECRET}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - lab-network
+
+  # Nginx (Proxy Reverso)
+  nginx:
+    image: nginx:alpine
+    container_name: lab-nginx
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./frontend:/usr/share/nginx/html
+    networks:
+      - lab-network
+
+volumes:
+  mysql_data:
+
+networks:
+  lab-network:
+    driver: bridge
