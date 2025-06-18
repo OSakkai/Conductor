@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CONDUCTOR - Login</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/pages/login.css">
+</head>
+<body>
+    <div class="login-page">
+        <!-- Header com logo -->
+        <header class="login-header">
+            <div class="logo-container">
+                <!-- Aqui vai ficar sua logo do mascote -->
+                <div class="logo-placeholder">⚡</div>
+                <h1>CONDUCTOR</h1>
+                <p class="tagline">Conducting Electrical Excellence</p>
+            </div>
+        </header>
+
+        <!-- Container principal -->
+        <main class="login-main">
+            <div class="login-container">
+                <!-- Tabs Login/Registro -->
+                <div class="tab-container">
+                    <button class="tab-btn active" onclick="showTab('login')">LOGIN</button>
+                    <button class="tab-btn" onclick="showTab('register')">REGISTRO</button>
+                </div>
+
+                <!-- Formulário de Login -->
+                <form id="loginForm" class="auth-form active">
+                    <div class="input-group">
+                        <label for="loginUsername">Usuário</label>
+                        <input type="text" id="loginUsername" name="username" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="loginPassword">Senha</label>
+                        <input type="password" id="loginPassword" name="password" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary full-width">
+                        <span class="btn-text">ENTRAR</span>
+                        <div class="loading" style="display: none;"></div>
+                    </button>
+                </form>
+
+                <!-- Formulário de Registro -->
+                <form id="registerForm" class="auth-form">
+                    <div class="input-group">
+                        <label for="regUsername">Nome de Usuário</label>
+                        <input type="text" id="regUsername" name="username" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="regEmail">Email</label>
+                        <input type="email" id="regEmail" name="email" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="regPhone">Celular (opcional)</label>
+                        <input type="tel" id="regPhone" name="phone">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="regFunction">Função</label>
+                        <select id="regFunction" name="function" required>
+                            <option value="">Selecione sua função</option>
+                            <option value="Estagiario">Estagiário</option>
+                            <option value="Analista">Analista</option>
+                            <option value="Coordenador">Coordenador</option>
+                            <option value="Gestor">Gestor</option>
+                            <option value="Diretor">Diretor</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="regPassword">Senha</label>
+                        <input type="password" id="regPassword" name="password" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="regPasswordConfirm">Confirmar Senha</label>
+                        <input type="password" id="regPasswordConfirm" name="passwordConfirm" required>
+                    </div>
+                    
+                    <!-- Campo para chave de acesso -->
+                    <div class="input-group">
+                        <label for="accessKey">Chave de Acesso (opcional)</label>
+                        <input type="text" id="accessKey" name="accessKey" placeholder="Digite sua chave para permissões especiais">
+                        <small class="text-gray">Se você possui uma chave de acesso, ela definirá automaticamente suas permissões</small>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary full-width">
+                        <span class="btn-text">CRIAR CONTA</span>
+                        <div class="loading" style="display: none;"></div>
+                    </button>
+                </form>
+
+                <!-- Mensagens de feedback -->
+                <div id="message" class="message" style="display: none;"></div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="login-footer">
+            <p>&copy; 2025 CONDUCTOR - Laboratório de P&D em Transmissão Elétrica</p>
+        </footer>
+    </div>
+
+    <script src="js/utils/api.js"></script>
+    <script src="js/utils/auth.js"></script>
+    <script src="js/pages/login.js"></script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CONDUCTOR - Dashboard</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/pages/dashboard.css">
+</head>
+<body>
+    <div class="dashboard-page">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo-mini">⚡</div>
+                    <span class="app-name">CONDUCTOR</span>
+                </div>
+                
+                <div class="system-status" id="systemStatus">
+                    <div class="status-indicator">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Sistema Online</span>
+                    </div>
+                </div>
+                
+                <div class="user-section">
+                    <div class="user-info">
+                        <span class="user-name" id="userName">Usuário</span>
+                        <span class="user-role" id="userRole">Visitante</span>
+                    </div>
+                    <button class="btn-logout" onclick="logout()">🚪 Sair</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="dashboard-main">
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <div class="status-grid">
+                    <div class="status-card">
+                        <div class="status-icon">💾</div>
+                        <div class="status-info">
+                            <span class="status-label">Database</span>
+                            <span class="status-value" id="dbStatus">Conectado</span>
+                        </div>
+                    </div>
+                    
+                    <div class="status-card">
+                        <div class="status-icon">👥</div>
+                        <div class="status-info">
+                            <span class="status-label">Usuários Online</span>
+                            <span class="status-value" id="usersOnline">1</span>
+                        </div>
+                    </div>
+                    
+                    <div class="status-card">
+                        <div class="status-icon">🔔</div>
+                        <div class="status-info">
+                            <span class="status-label">Notificações</span>
+                            <span class="status-value" id="notifications">0</span>
+                        </div>
+                    </div>
+                    
+                    <div class="status-card">
+                        <div class="status-icon">⚡</div>
+                        <div class="status-info">
+                            <span class="status-label">Atividade</span>
+                            <span class="status-value" id="lastActivity">Agora</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PlayStation Menu -->
+            <div class="menu-container">
+                <h2 class="menu-title">Centro de Controle</h2>
+                
+                <div class="menu-navigation">
+                    <button class="nav-btn nav-prev" onclick="navigateMenu(-1)">‹</button>
+                    
+                    <div class="menu-viewport">
+                        <div class="menu-track" id="menuTrack">
+                            <!-- Card 1: Perfil -->
+                            <div class="menu-card active" data-page="profile">
+                                <div class="card-icon">👤</div>
+                                <div class="card-content">
+                                    <h3>MEU PERFIL</h3>
+                                    <p>Visualizar e editar informações pessoais</p>
+                                    <div class="card-action">
+                                        <button class="btn btn-primary" onclick="goToPage('profile.html')">ACESSAR</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card 2: Administração (só Admin/Dev) -->
+                            <div class="menu-card" data-page="admin" id="adminCard" style="display: none;">
+                                <div class="card-icon">⚙️</div>
+                                <div class="card-content">
+                                    <h3>ADMINISTRAÇÃO</h3>
+                                    <p>Gerenciar usuários e configurações do sistema</p>
+                                    <div class="card-action">
+                                        <button class="btn btn-primary" onclick="goToPage('admin.html')">GERENCIAR</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card 3: Inventário (placeholder) -->
+                            <div class="menu-card" data-page="inventory">
+                                <div class="card-icon">📋</div>
+                                <div class="card-content">
+                                    <h3>INVENTÁRIO</h3>
+                                    <p>Controle de componentes eletrônicos</p>
+                                    <div class="card-action">
+                                        <button class="btn btn-secondary" disabled>EM BREVE</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card 4: Documentos (placeholder) -->
+                            <div class="menu-card" data-page="documents">
+                                <div class="card-icon">📄</div>
+                                <div class="card-content">
+                                    <h3>DOCUMENTOS</h3>
+                                    <p>Gestão de documentos da qualidade</p>
+                                    <div class="card-action">
+                                        <button class="btn btn-secondary" disabled>EM BREVE</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card 5: Protótipos (placeholder) -->
+                            <div class="menu-card" data-page="prototypes">
+                                <div class="card-icon">🔧</div>
+                                <div class="card-content">
+                                    <h3>PROTÓTIPOS</h3>
+                                    <p>Controle e testes de protótipos</p>
+                                    <div class="card-action">
+                                        <button class="btn btn-secondary" disabled>EM BREVE</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button class="nav-btn nav-next" onclick="navigateMenu(1)">›</button>
+                </div>
+
+                <!-- Indicadores -->
+                <div class="menu-indicators" id="menuIndicators">
+                    <span class="indicator active"></span>
+                    <span class="indicator"></span>
+                    <span class="indicator"></span>
+                    <span class="indicator"></span>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="stats-section">
+                <h3>Estatísticas Rápidas</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-number" id="totalUsers">0</span>
+                        <span class="stat-label">Total de Usuários</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="activeProjects">0</span>
+                        <span class="stat-label">Projetos Ativos</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="systemUptime">99.9%</span>
+                        <span class="stat-label">Uptime do Sistema</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/utils/api.js"></script>
+    <script src="js/utils/auth.js"></script>
+    <script src="js/pages/dashboard.js"></script>
+</body>
+</html>

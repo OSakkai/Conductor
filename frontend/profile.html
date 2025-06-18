@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CONDUCTOR - Meu Perfil</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/pages/profile.css">
+</head>
+<body>
+    <div class="profile-page">
+        <!-- Header -->
+        <header class="profile-header">
+            <div class="profile-header-content">
+                <button class="back-btn" onclick="goBack()">
+                    ← Voltar ao Dashboard
+                </button>
+                
+                <div class="profile-title">
+                    <div class="profile-avatar" id="profileAvatar">👤</div>
+                    <div class="profile-info">
+                        <h1 id="profileName">Carregando...</h1>
+                        <div class="profile-role" id="profileRole">Carregando...</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="profile-main">
+            <!-- Informações Pessoais -->
+            <section class="profile-section">
+                <h2 class="section-title">👤 Informações Pessoais</h2>
+                <div id="personalMessage" class="message"></div>
+
+                <form id="personalForm">
+                    <div class="form-grid">
+                        <div class="input-group">
+                            <label for="editUsername">Nome de Usuário</label>
+                            <input type="text" id="editUsername" name="username" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="editEmail">Email</label>
+                            <input type="email" id="editEmail" name="email" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="editPhone">Telefone</label>
+                            <input type="tel" id="editPhone" name="phone">
+                        </div>
+                        <div class="input-group">
+                            <label for="editFunction">Função</label>
+                            <select id="editFunction" name="function" required>
+                                <option value="Estagiario">Estagiário</option>
+                                <option value="Analista">Analista</option>
+                                <option value="Coordenador">Coordenador</option>
+                                <option value="Gestor">Gestor</option>
+                                <option value="Diretor">Diretor</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="editPermission">Nível de Permissão</label>
+                        <input type="text" id="editPermission" name="permission" disabled>
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-secondary" onclick="resetPersonalForm()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">💾 Salvar Alterações</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Alterar Senha -->
+            <section class="profile-section">
+                <h2 class="section-title">🔐 Alterar Senha</h2>
+                <div id="passwordMessage" class="message"></div>
+
+                <form id="passwordForm">
+                    <div class="input-group">
+                        <label for="currentPassword">Senha Atual</label>
+                        <input type="password" id="currentPassword" name="currentPassword" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="newPassword">Nova Senha</label>
+                        <input type="password" id="newPassword" name="newPassword" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="confirmPassword">Confirmar Nova Senha</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" required>
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-secondary" onclick="resetPasswordForm()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">🔐 Alterar Senha</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Estatísticas -->
+            <section class="profile-section">
+                <h2 class="section-title">📊 Suas Estatísticas</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-number" id="userLoginCount">0</span>
+                        <span class="stat-label">Total de Logins</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="userLastLogin">--</span>
+                        <span class="stat-label">Último Login</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="userAccountAge">0</span>
+                        <span class="stat-label">Dias de Conta</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Atividade Recente -->
+            <section class="profile-section">
+                <h2 class="section-title">🕒 Atividade Recente</h2>
+                <div id="activityList">
+                    <div class="activity-item">
+                        <div class="activity-icon">🔑</div>
+                        <div class="activity-content">
+                            <div class="activity-title">Login realizado</div>
+                            <div class="activity-time">Agora mesmo</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon">👤</div>
+                        <div class="activity-content">
+                            <div class="activity-title">Perfil acessado</div>
+                            <div class="activity-time">Há 2 minutos</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="js/utils/api.js"></script>
+    <script src="js/utils/auth.js"></script>
+    <script src="js/pages/profile.js"></script>
+</body>
+</html>

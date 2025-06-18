@@ -36,6 +36,10 @@ export class UsersService {
     });
   }
 
+  async getUserCount(): Promise<number> {
+    return this.usersRepository.count();
+  }
+
   async create(userData: Partial<User>): Promise<User> {
     // Verificar se usuário já existe
     const existingUser = await this.findByUsername(userData.nome_usuario);
@@ -49,7 +53,6 @@ export class UsersService {
     }
 
     // Hash da senha
-    const saltRounds = 10;
     const hashedPassword = await argon2.hash(userData.senha);
 
     const user = this.usersRepository.create({
@@ -78,7 +81,6 @@ export class UsersService {
 
     // Se estiver atualizando a senha, fazer o hash
     if (updateData.senha) {
-      const saltRounds = 10;
       updateData.senha = await argon2.hash(updateData.senha);
     }
 

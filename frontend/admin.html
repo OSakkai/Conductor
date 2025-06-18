@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CONDUCTOR - Administração</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/pages/admin.css">
+</head>
+<body>
+    <div class="admin-page">
+        <!-- Header -->
+        <header class="admin-header">
+            <div class="admin-header-content">
+                <button class="back-btn" onclick="goBack()">
+                    ← Voltar ao Dashboard
+                </button>
+                
+                <div class="admin-title">
+                    <div class="admin-icon">⚙️</div>
+                    <div>
+                        <h1>Administração</h1>
+                        <p>Gestão de usuários e sistema</p>
+                    </div>
+                </div>
+                
+                <div class="admin-nav">
+                    <button class="nav-tab active" onclick="showTab('users')">👥 Usuários</button>
+                    <button class="nav-tab" onclick="showTab('keys')">🔑 Chaves</button>
+                    <button class="nav-tab" onclick="showTab('logs')">📋 Logs</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- Estatísticas Overview -->
+            <div class="stats-overview">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon">👥</div>
+                        <div>
+                            <div class="stat-number" id="totalUsers">0</div>
+                            <div class="stat-label">Total de Usuários</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon">🔑</div>
+                        <div>
+                            <div class="stat-number" id="totalKeys">0</div>
+                            <div class="stat-label">Chaves Ativas</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon">⚡</div>
+                        <div>
+                            <div class="stat-number" id="todayActions">0</div>
+                            <div class="stat-label">Ações Hoje</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon">🛡️</div>
+                        <div>
+                            <div class="stat-number" id="adminUsers">0</div>
+                            <div class="stat-label">Administradores</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Usuários -->
+            <div id="usersTab" class="tab-content active">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2 class="section-title">👥 Gestão de Usuários</h2>
+                        <button class="btn-new" onclick="showNewUserModal()">+ Novo Usuário</button>
+                    </div>
+
+                    <!-- Filtros -->
+                    <div class="filters">
+                        <input type="text" id="userSearch" placeholder="🔍 Buscar usuários..." onkeyup="filterUsers()">
+                        <select id="permissionFilter" onchange="filterUsers()">
+                            <option value="">Todas as permissões</option>
+                            <option value="Visitante">Visitante</option>
+                            <option value="Usuario">Usuário</option>
+                            <option value="Operador">Operador</option>
+                            <option value="Administrador">Administrador</option>
+                            <option value="Desenvolvedor">Desenvolvedor</option>
+                        </select>
+                        <select id="statusFilter" onchange="filterUsers()">
+                            <option value="">Todos os status</option>
+                            <option value="ativo">Ativo</option>
+                            <option value="inativo">Inativo</option>
+                        </select>
+                    </div>
+
+                    <!-- Tabela de Usuários -->
+                    <div class="table-container">
+                        <table class="users-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Usuário</th>
+                                    <th>Email</th>
+                                    <th>Função</th>
+                                    <th>Permissão</th>
+                                    <th>Status</th>
+                                    <th>Último Login</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                <!-- Usuários serão carregados aqui -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Chaves de Acesso -->
+            <div id="keysTab" class="tab-content">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2 class="section-title">🔑 Chaves de Acesso</h2>
+                        <button class="btn-new" onclick="showNewKeyModal()">+ Nova Chave</button>
+                    </div>
+
+                    <!-- Estatísticas de Chaves -->
+                    <div class="key-stats">
+                        <div class="key-stat">
+                            <span class="key-stat-number" id="permanentKeys">0</span>
+                            <span class="key-stat-label">Permanentes</span>
+                        </div>
+                        <div class="key-stat">
+                            <span class="key-stat-number" id="expiringKeys">0</span>
+                            <span class="key-stat-label">Expiráveis</span>
+                        </div>
+                        <div class="key-stat">
+                            <span class="key-stat-number" id="oneTimeKeys">0</span>
+                            <span class="key-stat-label">Uso Único</span>
+                        </div>
+                        <div class="key-stat">
+                            <span class="key-stat-number" id="usedKeys">0</span>
+                            <span class="key-stat-label">Utilizadas</span>
+                        </div>
+                    </div>
+
+                    <!-- Tabela de Chaves -->
+                    <div class="table-container">
+                        <table class="keys-table">
+                            <thead>
+                                <tr>
+                                    <th>Chave</th>
+                                    <th>Tipo</th>
+                                    <th>Permissão</th>
+                                    <th>Criado em</th>
+                                    <th>Expira em</th>
+                                    <th>Usos</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="keysTableBody">
+                                <!-- Chaves serão carregadas aqui -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Logs -->
+            <div id="logsTab" class="tab-content">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2 class="section-title">📋 Logs do Sistema</h2>
+                        <div class="log-controls">
+                            <select id="logFilter">
+                                <option value="">Todas as ações</option>
+                                <option value="login">Login</option>
+                                <option value="logout">Logout</option>
+                                <option value="user_created">Usuário Criado</option>
+                                <option value="user_updated">Usuário Atualizado</option>
+                                <option value="permission_changed">Permissão Alterada</option>
+                                <option value="key_created">Chave Criada</option>
+                                <option value="key_used">Chave Utilizada</option>
+                            </select>
+                            <button class="btn btn-secondary" onclick="refreshLogs()">🔄 Atualizar</button>
+                        </div>
+                    </div>
+
+                    <div class="logs-container" id="logsContainer">
+                        <!-- Logs serão carregados aqui -->
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Modal: Novo Usuário -->
+        <div id="newUserModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>👤 Criar Novo Usuário</h3>
+                    <button class="modal-close" onclick="closeModal('newUserModal')">&times;</button>
+                </div>
+                <form id="newUserForm">
+                    <div class="form-grid">
+                        <div class="input-group">
+                            <label for="newUserName">Nome de Usuário</label>
+                            <input type="text" id="newUserName" name="username" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="newUserEmail">Email</label>
+                            <input type="email" id="newUserEmail" name="email" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="newUserPhone">Telefone</label>
+                            <input type="tel" id="newUserPhone" name="phone">
+                        </div>
+                        <div class="input-group">
+                            <label for="newUserFunction">Função</label>
+                            <select id="newUserFunction" name="function" required>
+                                <option value="Estagiario">Estagiário</option>
+                                <option value="Analista">Analista</option>
+                                <option value="Coordenador">Coordenador</option>
+                                <option value="Gestor">Gestor</option>
+                                <option value="Diretor">Diretor</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="newUserPermission">Permissão</label>
+                            <select id="newUserPermission" name="permission" required>
+                                <option value="Visitante">Visitante</option>
+                                <option value="Usuario">Usuário</option>
+                                <option value="Operador">Operador</option>
+                                <option value="Administrador">Administrador</option>
+                                <option value="Desenvolvedor">Desenvolvedor</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="newUserPassword">Senha</label>
+                            <input type="password" id="newUserPassword" name="password" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('newUserModal')">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">👤 Criar Usuário</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal: Nova Chave -->
+        <div id="newKeyModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>🔑 Criar Nova Chave</h3>
+                    <button class="modal-close" onclick="closeModal('newKeyModal')">&times;</button>
+                </div>
+                <form id="newKeyForm">
+                    <div class="input-group">
+                        <label for="keyType">Tipo de Chave</label>
+                        <select id="keyType" name="type" required onchange="toggleExpiryField()">
+                            <option value="permanent">🔑 Permanente</option>
+                            <option value="expiring">⏰ Expirável</option>
+                            <option value="single_use">1️⃣ Uso Único</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="keyPermission">Permissão Concedida</label>
+                        <select id="keyPermission" name="permission" required>
+                            <option value="Usuario">Usuário</option>
+                            <option value="Operador">Operador</option>
+                            <option value="Administrador">Administrador</option>
+                            <option value="Desenvolvedor">Desenvolvedor</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-group" id="expiryGroup" style="display: none;">
+                        <label for="keyExpiry">Data de Expiração</label>
+                        <input type="datetime-local" id="keyExpiry" name="expiry">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="keyDescription">Descrição (opcional)</label>
+                        <input type="text" id="keyDescription" name="description" placeholder="Ex: Chave para novo estagiário">
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('newKeyModal')">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">🔑 Gerar Chave</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal: Editar Usuário -->
+        <div id="editUserModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>✏️ Editar Usuário</h3>
+                    <button class="modal-close" onclick="closeModal('editUserModal')">&times;</button>
+                </div>
+                <form id="editUserForm">
+                    <input type="hidden" id="editUserId" name="userId">
+                    <div class="form-grid">
+                        <div class="input-group">
+                            <label for="editUserName">Nome de Usuário</label>
+                            <input type="text" id="editUserName" name="username" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="editUserEmail">Email</label>
+                            <input type="email" id="editUserEmail" name="email" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="editUserPhone">Telefone</label>
+                            <input type="tel" id="editUserPhone" name="phone">
+                        </div>
+                        <div class="input-group">
+                            <label for="editUserFunction">Função</label>
+                            <select id="editUserFunction" name="function" required>
+                                <option value="Estagiario">Estagiário</option>
+                                <option value="Analista">Analista</option>
+                                <option value="Coordenador">Coordenador</option>
+                                <option value="Gestor">Gestor</option>
+                                <option value="Diretor">Diretor</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="editUserPermission">Permissão</label>
+                            <select id="editUserPermission" name="permission" required>
+                                <option value="Visitante">Visitante</option>
+                                <option value="Usuario">Usuário</option>
+                                <option value="Operador">Operador</option>
+                                <option value="Administrador">Administrador</option>
+                                <option value="Desenvolvedor">Desenvolvedor</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="editUserStatus">Status</label>
+                            <select id="editUserStatus" name="status" required>
+                                <option value="Ativo">Ativo</option>
+                                <option value="Inativo">Inativo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('editUserModal')">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">💾 Salvar Alterações</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/utils/api.js"></script>
+    <script src="js/utils/auth.js"></script>
+    <script src="js/pages/admin.js"></script>
+</body>
+</html>

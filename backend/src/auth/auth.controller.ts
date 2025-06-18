@@ -17,10 +17,22 @@ export class AuthController {
   }
 
   @Post('register')
-  @UseGuards(JwtAuthGuard)
-  @Roles(UserPermission.ADMINISTRADOR, UserPermission.DESENVOLVEDOR)
   async register(@Body() createUserDto: CreateUserDto) {
-    return this.authService.register(createUserDto);
+    // Verificar se é o primeiro usuário do sistema
+    const isFirstUser = await this.authService.isFirstUser();
+    
+    if (isFirstUser) {
+      // Primeiro usuário vira Desenvolvedor automaticamente
+      return this.authService.registerFirstUser(createUserDto);
+    }
+    
+    // Verificar se tem chave de acesso
+    if (createUserDto.chave_acesso) {
+      return this.authService.registerWithKey(createUserDto);
+    }
+    
+    // Registro público normal (vira Visitante)
+    return this.authService.registerPublic(createUserDto);
   }
 
   @Get('profile')
