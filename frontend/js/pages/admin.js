@@ -25,6 +25,58 @@ class AdminManager {
         this.setupEventListeners();
     }
 
+    // 🆕 SISTEMA DE LOGS
+// 🆕 SISTEMA DE LOGS
+    async addLog(action, details, targetUser = null) {
+        const currentUser = authManager.getCurrentUser();
+        
+        const logData = {
+            usuario_id: currentUser?.id || null,
+            acao: action,
+            detalhes: details,
+            usuario_alvo: targetUser,
+            ip_address: '192.168.1.100', // Por enquanto fixo
+            user_agent: navigator.userAgent
+        };
+
+        try {
+            // Usar a instância global correta
+            const response = await window.conductorAPI.post('/logs', logData);
+            console.log('✅ Log salvo com sucesso:', response); // Debug
+            
+            // Recarregar logs para mostrar na interface
+            if (this.currentTab === 'logs') {
+                await this.loadLogs();
+            }
+            
+            // Atualizar estatísticas
+            this.updateStats();
+        } catch (error) {
+            console.error('❌ Erro ao salvar log:', error);
+            
+            // Fallback: manter log local se API falhar
+            const newLog = {
+                id: Date.now(),
+                acao: action,
+                usuario: currentUser ? currentUser.nome_usuario : 'Sistema',
+                usuario_alvo: targetUser,
+                detalhes: details,
+                data_criacao: new Date().toISOString(),
+                ip_address: logData.ip_address
+            };
+            
+            this.logs.unshift(newLog);
+            if (this.logs.length > 100) {
+                this.logs = this.logs.slice(0, 100);
+            }
+            
+            // Re-renderizar logs se estiver na aba de logs
+            if (this.currentTab === 'logs') {
+                this.renderLogs();
+            }
+        }
+    }
+
     async loadData() {
         await this.loadUsers();
         await this.loadKeys();
@@ -103,46 +155,49 @@ class AdminManager {
             `;
             tbody.appendChild(row);
         });
-}
+    }
 
     async loadKeys() {
         try {
-            // Por enquanto, dados mockados
-            this.keys = [
-                {
-                    id: 1,
-                    key: 'COND-ADM-2025-001',
-                    type: 'permanent',
-                    permission: 'Administrador',
-                    created_at: new Date().toISOString(),
-                    expires_at: null,
-                    uses: 0,
-                    max_uses: null,
-                    status: 'active',
-                    description: 'Chave para novos administradores'
-                },
-                {
-                    id: 2,
-                    key: 'COND-USR-2025-002',
-                    type: 'single_use',
-                    permission: 'Usuario',
-                    created_at: new Date().toISOString(),
-                    expires_at: null,
-                    uses: 1,
-                    max_uses: 1,
-                    status: 'used',
-                    description: 'Chave para estagiário temporário'
-                }
-            ];
+            const response = await conductorAPI.get('/chaves');
+            if (response && response.data) {
+                this.keys = response.data;
+            } else {
+                // Se não há endpoint ainda, manter dados mockados
+                this.keys = [
+                    {
+                        id: 1,
+                        chave: 'COND-PERM-ADM-2025-ABC123',
+                        tipo: 'permanent',
+                        permissao: 'Administrador',
+                        data_criacao: new Date().toISOString(),
+                        data_expiracao: null,
+                        usos_atual: 0,
+                        usos_maximo: null,
+                        status: 'ativa',
+                        descricao: 'Chave para novos administradores',
+                        criado_por: 'Sistema'
+                    }
+                ];
+            }
             this.renderKeysTable();
         } catch (error) {
             console.error('Erro ao carregar chaves:', error);
+            // Fallback para dados mockados
+            this.keys = [];
+            this.renderKeysTable();
         }
     }
 
     renderKeysTable() {
         const tbody = document.getElementById('keysTableBody');
         tbody.innerHTML = '';
+
+        // 🔧 VERIFICAR SE HÁ CHAVES
+        if (!this.keys || this.keys.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--gray-lighter);">Nenhuma chave encontrada</td></tr>';
+            return;
+        }
 
         this.keys.forEach(key => {
             const row = document.createElement('tr');
@@ -152,18 +207,26 @@ class AdminManager {
                 'single_use': '1️⃣ Uso Único'
             };
 
+            // 🔧 VERIFICAÇÕES DE SEGURANÇA
+            const keyType = key.tipo || key.type || 'permanent';
+            const keyPermission = key.permissao || key.permission || 'Usuario';
+            const keyStatus = key.status || 'ativa';
+            const keyChave = key.chave || key.key || 'N/A';
+
+            console.log('Renderizando chave:', { keyType, keyPermission, keyStatus, keyChave }); // Debug
+
             row.innerHTML = `
-                <td><code>${key.key}</code></td>
-                <td>${typeLabels[key.type]}</td>
-                <td><span class="permission-badge permission-${key.permission.toLowerCase()}">${key.permission}</span></td>
-                <td>${this.formatDate(key.created_at)}</td>
-                <td>${key.expires_at ? this.formatDate(key.expires_at) : 'Nunca'}</td>
-                <td>${key.uses}${key.max_uses ? `/${key.max_uses}` : ''}</td>
-                <td><span class="user-status status-${key.status === 'active' ? 'ativo' : 'inativo'}">${key.status === 'active' ? 'Ativa' : 'Inativa'}</span></td>
+                <td><code>${keyChave}</code></td>
+                <td>${typeLabels[keyType] || keyType}</td>
+                <td><span class="permission-badge permission-${keyPermission.toLowerCase()}">${keyPermission}</span></td>
+                <td>${this.formatDate(key.data_criacao || key.created_at)}</td>
+                <td>${key.data_expiracao ? this.formatDate(key.data_expiracao) : 'Nunca'}</td>
+                <td>${key.usos_atual || 0}${key.usos_maximo ? `/${key.usos_maximo}` : ''}</td>
+                <td><span class="user-status status-${keyStatus === 'ativa' ? 'ativo' : 'inativo'}">${keyStatus === 'ativa' ? 'Ativa' : 'Inativa'}</span></td>
                 <td>
                     <div class="action-buttons">
-                        <button class="btn-sm btn-edit" onclick="adminManager.copyKey('${key.key}')">📋 Copiar</button>
-                        ${key.status === 'active' ? `
+                        <button class="btn-sm btn-edit" onclick="adminManager.copyKey('${keyChave}')">📋 Copiar</button>
+                        ${keyStatus === 'ativa' ? `
                             <button class="btn-sm btn-disable" onclick="adminManager.deactivateKey(${key.id})">🚫 Desativar</button>
                         ` : ''}
                     </div>
@@ -175,28 +238,28 @@ class AdminManager {
 
     async loadLogs() {
         try {
-            // Por enquanto, dados mockados
-            this.logs = [
-                {
-                    id: 1,
-                    action: 'login',
-                    user: 'dev',
-                    details: 'Login realizado com sucesso',
-                    timestamp: new Date().toISOString(),
-                    ip: '192.168.1.100'
-                },
-                {
-                    id: 2,
-                    action: 'user_created',
-                    user: 'admin',
-                    details: 'Novo usuário criado: teste_user',
-                    timestamp: new Date(Date.now() - 300000).toISOString(),
-                    ip: '192.168.1.100'
-                }
-            ];
+            const response = await conductorAPI.get('/logs');
+            if (response && response.data) {
+                this.logs = response.data;
+            } else {
+                // Se não há endpoint ainda, manter dados iniciais
+                this.logs = [
+                    {
+                        id: 1,
+                        acao: 'admin_access',
+                        usuario: authManager.getCurrentUser()?.nome_usuario || 'Admin',
+                        usuario_alvo: null,
+                        detalhes: 'Acesso ao painel de administração',
+                        data_criacao: new Date().toISOString(),
+                        ip_address: '192.168.1.100'
+                    }
+                ];
+            }
             this.renderLogs();
         } catch (error) {
             console.error('Erro ao carregar logs:', error);
+            this.logs = [];
+            this.renderLogs();
         }
     }
 
@@ -209,21 +272,34 @@ class AdminManager {
             'logout': '🚪',
             'user_created': '👤',
             'user_updated': '✏️',
+            'user_promoted': '⬆️',
+            'user_demoted': '⬇️',
+            'user_activated': '✅',
+            'user_deactivated': '🚫',
             'permission_changed': '🛡️',
             'key_created': '🔑',
-            'key_used': '🗝️'
+            'key_copied': '📋',
+            'key_deactivated': '🚫',
+            'admin_access': '🔧',
+            'system_start': '⚡'
         };
 
         this.logs.forEach(log => {
             const logItem = document.createElement('div');
             logItem.className = 'log-item';
+            
+            // Usar os campos corretos da tabela logs_sistema
+            const usuario = log.usuario?.nome_usuario || log.usuario || 'Sistema';
+            const timestamp = log.data_criacao || log.timestamp;
+            const ip = log.ip_address || log.ip || 'N/A';
+            
             logItem.innerHTML = `
-                <div class="log-icon">${actionIcons[log.action] || '📋'}</div>
+                <div class="log-icon">${actionIcons[log.acao] || '📋'}</div>
                 <div class="log-content">
-                    <div class="log-action">${log.details}</div>
-                    <div class="log-details">Por: ${log.user} • IP: ${log.ip}</div>
+                    <div class="log-action">${log.detalhes}</div>
+                    <div class="log-details">Por: ${usuario}${log.usuario_alvo ? ` • Usuário: ${log.usuario_alvo}` : ''} • IP: ${ip}</div>
                 </div>
-                <div class="log-time">${this.formatDate(log.timestamp)}</div>
+                <div class="log-time">${this.formatDate(timestamp)}</div>
             `;
             container.appendChild(logItem);
         });
@@ -256,12 +332,11 @@ class AdminManager {
         document.getElementById(modalId).style.display = 'none';
     }
 
-    // User Management
+    // User Management COM LOGS
     async createUser() {
         const formData = new FormData(document.getElementById('newUserForm'));
         const userData = Object.fromEntries(formData);
 
-        // Mapear campos do frontend para backend
         const backendData = {
             nome_usuario: userData.username,
             email: userData.email,
@@ -273,12 +348,18 @@ class AdminManager {
 
         try {
             const response = await conductorAPI.post('/users', backendData);
-            if (response.success) {
+            
+            if (response && response.message) {
+                // 📋 LOG DA AÇÃO
+                this.addLog('user_created', `Novo usuário criado: ${userData.username} (${userData.permission})`, userData.username);
+                
                 this.showMessage('Usuário criado com sucesso!', 'success');
                 this.closeModal('newUserModal');
                 document.getElementById('newUserForm').reset();
                 await this.loadUsers();
                 this.updateStats();
+            } else {
+                this.showMessage('Erro: Resposta inesperada da API', 'error');
             }
         } catch (error) {
             this.showMessage('Erro ao criar usuário: ' + error.message, 'error');
@@ -289,54 +370,58 @@ class AdminManager {
         const user = this.users.find(u => u.id === userId);
         if (!user) return;
 
-        // Preencher modal de edição
+        // 🔧 CORREÇÕES
         document.getElementById('editUserId').value = user.id;
         document.getElementById('editUserName').value = user.nome_usuario;
         document.getElementById('editUserEmail').value = user.email || '';
-        document.getElementById('editUserPhone').value = user.telefone || '';
+        document.getElementById('editUserPhone').value = user.celular || ''; // CORRIGIDO: celular
         document.getElementById('editUserFunction').value = user.funcao || '';
         document.getElementById('editUserPermission').value = user.permissao;
-        document.getElementById('editUserStatus').value = user.ativo ? 'ativo' : 'inativo';
+        document.getElementById('editUserStatus').value = user.status; // CORRIGIDO: status
 
         this.showModal('editUserModal');
     }
 
     async updateUser() {
-        console.log('🔧 Função updateUser chamada!'); // ← ADICIONAR ESTA LINHA
-        console.log('📋 Dados recebidos:', arguments); // ← ADICIONAR
-
         const formData = new FormData(document.getElementById('editUserForm'));
         const userData = Object.fromEntries(formData);
         const userId = userData.userId;
-    
 
-        console.log('📤 Dados que serão enviados:', userData); // ← ADICIONAR
+        // Encontrar usuário original para comparar mudanças
+        const originalUser = this.users.find(u => u.id == userId);
 
-        // Mapear campos do frontend para backend
         const backendData = {
             nome_usuario: userData.username,
             email: userData.email,
             celular: userData.phone,
             funcao: userData.function,
             permissao: userData.permission,
-            status: userData.status === 'ativo' ? 'Ativo' : userData.status
+            status: userData.status
         };
 
-         console.log('📤 Dados mapeados para backend:', backendData); // ← ADICIONAR
-
         try {
-            console.log('🚀 Enviando para API...'); // ← ADICIONAR
             const response = await conductorAPI.put(`/users/${userId}`, backendData);
-            console.log('📥 Resposta da API:', response); // ← ADICIONAR
-            if (response.success) {
-                console.log('✅ Sucesso!'); // ← ADICIONAR
+            
+            if (response && response.message) {
+                // 📋 LOG DAS MUDANÇAS
+                const changes = [];
+                if (originalUser.nome_usuario !== userData.username) changes.push(`nome: ${originalUser.nome_usuario} → ${userData.username}`);
+                if (originalUser.email !== userData.email) changes.push(`email: ${originalUser.email} → ${userData.email}`);
+                if (originalUser.funcao !== userData.function) changes.push(`função: ${originalUser.funcao} → ${userData.function}`);
+                if (originalUser.permissao !== userData.permission) changes.push(`permissão: ${originalUser.permissao} → ${userData.permission}`);
+                if (originalUser.status !== userData.status) changes.push(`status: ${originalUser.status} → ${userData.status}`);
+                
+                const changeDetails = changes.length > 0 ? ` (${changes.join(', ')})` : '';
+                this.addLog('user_updated', `Usuário editado: ${userData.username}${changeDetails}`, userData.username);
+
                 this.showMessage('Usuário atualizado com sucesso!', 'success');
                 this.closeModal('editUserModal');
                 await this.loadUsers();
                 this.updateStats();
+            } else {
+                this.showMessage('Erro: Resposta inesperada da API', 'error');
             }
         } catch (error) {
-            console.log('❌ Erro capturado:', error); // ← ADICIONAR
             this.showMessage('Erro ao atualizar usuário: ' + error.message, 'error');
         }
     }
@@ -351,7 +436,7 @@ class AdminManager {
         if (currentIndex < permissions.length - 1) {
             const newPermission = permissions[currentIndex + 1];
             if (confirm(`Promover ${user.nome_usuario} para ${newPermission}?`)) {
-                await this.changeUserPermission(userId, newPermission);
+                await this.changeUserPermission(userId, newPermission, 'promote');
             }
         } else {
             alert('Usuário já possui a permissão máxima!');
@@ -368,22 +453,31 @@ class AdminManager {
         if (currentIndex > 0) {
             const newPermission = permissions[currentIndex - 1];
             if (confirm(`Rebaixar ${user.nome_usuario} para ${newPermission}?`)) {
-                await this.changeUserPermission(userId, newPermission);
+                await this.changeUserPermission(userId, newPermission, 'demote');
             }
         } else {
             alert('Usuário já possui a permissão mínima!');
         }
     }
 
-    async changeUserPermission(userId, newPermission) {
+    async changeUserPermission(userId, newPermission, actionType = 'change') {
+        const user = this.users.find(u => u.id === userId);
+        
         try {
             const response = await conductorAPI.put(`/users/${userId}`, { 
                 permissao: newPermission 
             });
-            if (response.success) {
+            
+            if (response && response.message) {
+                // 📋 LOG DA AÇÃO
+                const actionText = actionType === 'promote' ? 'promovido' : actionType === 'demote' ? 'rebaixado' : 'alterado';
+                this.addLog(`user_${actionType}d`, `Usuário ${actionText}: ${user.nome_usuario} (${user.permissao} → ${newPermission})`, user.nome_usuario);
+
                 this.showMessage('Permissão alterada com sucesso!', 'success');
                 await this.loadUsers();
                 this.updateStats();
+            } else {
+                this.showMessage('Erro: Resposta inesperada da API', 'error');
             }
         } catch (error) {
             this.showMessage('Erro ao alterar permissão: ' + error.message, 'error');
@@ -394,16 +488,25 @@ class AdminManager {
         const user = this.users.find(u => u.id === userId);
         if (!user) return;
 
-        const action = user.ativo ? 'desativar' : 'ativar';
+        const isActive = user.status === 'Ativo';
+        const action = isActive ? 'desativar' : 'ativar';
+        const newStatus = isActive ? 'Inativo' : 'Ativo';
+        
         if (confirm(`Tem certeza que deseja ${action} o usuário ${user.nome_usuario}?`)) {
             try {
                 const response = await conductorAPI.put(`/users/${userId}`, { 
-                    status: user.ativo ? 'inativo' : 'ativo' 
+                    status: newStatus 
                 });
-                if (response.success) {
+                
+                if (response && response.message) {
+                    // 📋 LOG DA AÇÃO
+                    this.addLog(`user_${isActive ? 'deactivated' : 'activated'}`, `Usuário ${action}do: ${user.nome_usuario}`, user.nome_usuario);
+
                     this.showMessage(`Usuário ${action}do com sucesso!`, 'success');
                     await this.loadUsers();
                     this.updateStats();
+                } else {
+                    this.showMessage('Erro: Resposta inesperada da API', 'error');
                 }
             } catch (error) {
                 this.showMessage(`Erro ao ${action} usuário: ` + error.message, 'error');
@@ -411,47 +514,46 @@ class AdminManager {
         }
     }
 
-    // Key Management
+    // Key Management COM LOGS
     async createKey() {
         const formData = new FormData(document.getElementById('newKeyForm'));
         const keyData = Object.fromEntries(formData);
 
-        // Gerar chave única
         const keyCode = this.generateKeyCode(keyData.type, keyData.permission);
-        keyData.key = keyCode;
+        
+        const backendData = {
+            chave: keyCode,
+            tipo: keyData.type,
+            permissao: keyData.permission,
+            data_expiracao: keyData.expiry || null,
+            usos_maximo: keyData.type === 'single_use' ? 1 : null,
+            descricao: keyData.description || '',
+            criado_por: authManager.getCurrentUser()?.nome_usuario || 'Admin'
+        };
 
         try {
-            // Simular criação (implementar backend depois)
-            const newKey = {
-                id: this.keys.length + 1,
-                key: keyCode,
-                type: keyData.type,
-                permission: keyData.permission,
-                created_at: new Date().toISOString(),
-                expires_at: keyData.expiry || null,
-                uses: 0,
-                max_uses: keyData.type === 'single_use' ? 1 : null,
-                status: 'active',
-                description: keyData.description || ''
-            };
+            const response = await conductorAPI.post('/chaves', backendData);
+            
+            if (response && response.message) {
+                // 📋 LOG DA AÇÃO
+                this.addLog('key_created', `Chave de acesso criada: ${keyCode} (${keyData.type}, ${keyData.permission})`);
 
-            this.keys.push(newKey);
-            this.renderKeysTable();
-            this.updateStats();
+                this.showMessage(`Chave criada: ${keyCode}`, 'success');
+                this.closeModal('newKeyModal');
+                document.getElementById('newKeyForm').reset();
+                
+                // Recarregar chaves do banco
+                await this.loadKeys();
+                this.updateStats();
 
-            this.showMessage(`Chave criada: ${keyCode}`, 'success');
-            this.closeModal('newKeyModal');
-            document.getElementById('newKeyForm').reset();
-
-            // Copiar para clipboard
-            navigator.clipboard.writeText(keyCode);
-            alert(`Chave criada e copiada para clipboard: ${keyCode}`);
-
+                // Copiar para clipboard
+                navigator.clipboard.writeText(keyCode);
+                alert(`Chave criada e copiada para clipboard: ${keyCode}`);
+            }
         } catch (error) {
             this.showMessage('Erro ao criar chave: ' + error.message, 'error');
         }
     }
-
     generateKeyCode(type, permission) {
         const typePrefix = {
             'permanent': 'PERM',
@@ -474,17 +576,34 @@ class AdminManager {
 
     copyKey(keyCode) {
         navigator.clipboard.writeText(keyCode);
+        
+        // 📋 LOG DA AÇÃO
+        this.addLog('key_copied', `Chave copiada: ${keyCode}`);
+        
         this.showMessage('Chave copiada para clipboard!', 'success');
     }
 
     async deactivateKey(keyId) {
         if (confirm('Tem certeza que deseja desativar esta chave?')) {
-            const key = this.keys.find(k => k.id === keyId);
-            if (key) {
-                key.status = 'inactive';
-                this.renderKeysTable();
-                this.updateStats();
-                this.showMessage('Chave desativada com sucesso!', 'success');
+            try {
+                const response = await conductorAPI.put(`/chaves/${keyId}`, { 
+                    status: 'inativa' 
+                });
+                
+                if (response && response.message) {
+                    const key = this.keys.find(k => k.id === keyId);
+                    
+                    // 📋 LOG DA AÇÃO
+                    this.addLog('key_deactivated', `Chave desativada: ${key?.chave || keyId}`);
+                    
+                    this.showMessage('Chave desativada com sucesso!', 'success');
+                    
+                    // Recarregar chaves do banco
+                    await this.loadKeys();
+                    this.updateStats();
+                }
+            } catch (error) {
+                this.showMessage('Erro ao desativar chave: ' + error.message, 'error');
             }
         }
     }
@@ -515,9 +634,16 @@ class AdminManager {
             const matchesSearch = user.nome_usuario.toLowerCase().includes(search) || 
                                 (user.email && user.email.toLowerCase().includes(search));
             const matchesPermission = !permissionFilter || user.permissao === permissionFilter;
-            const matchesStatus = !statusFilter || 
-                                (statusFilter === 'ativo' && user.ativo) || 
-                                (statusFilter === 'inativo' && !user.ativo);
+            
+            // 🔧 CORREÇÃO: Filtro de status correto
+            let matchesStatus = true;
+            if (statusFilter) {
+                if (statusFilter === 'ativo') {
+                    matchesStatus = user.status === 'Ativo'; // Banco usa 'Ativo' (maiúsculo)
+                } else if (statusFilter === 'inativo') {
+                    matchesStatus = user.status === 'Inativo'; // Banco usa 'Inativo' (maiúsculo)
+                }
+            }
 
             return matchesSearch && matchesPermission && matchesStatus;
         });
@@ -528,13 +654,16 @@ class AdminManager {
         
         filteredUsers.forEach(user => {
             const row = document.createElement('tr');
+            const isActive = user.status === 'Ativo';
+            const statusClass = isActive ? 'ativo' : 'inativo';
+            
             row.innerHTML = `
                 <td>#${user.id}</td>
                 <td>${user.nome_usuario}</td>
                 <td>${user.email || 'N/A'}</td>
                 <td>${user.funcao || 'N/A'}</td>
                 <td><span class="permission-badge permission-${user.permissao.toLowerCase()}">${user.permissao}</span></td>
-                <td><span class="user-status status-${user.ativo ? 'ativo' : 'inativo'}">${user.ativo ? 'Ativo' : 'Inativo'}</span></td>
+                <td><span class="user-status status-${statusClass}">${user.status}</span></td>
                 <td>${this.formatDate(user.ultimo_login) || 'Nunca'}</td>
                 <td>
                     <div class="action-buttons">
@@ -543,9 +672,9 @@ class AdminManager {
                             <button class="btn-sm btn-promote" onclick="adminManager.promoteUser(${user.id})">⬆️ Promover</button>
                             <button class="btn-sm btn-demote" onclick="adminManager.demoteUser(${user.id})">⬇️ Rebaixar</button>
                         ` : ''}
-                        <button class="btn-sm ${user.ativo ? 'btn-disable' : 'btn-enable'}" 
+                        <button class="btn-sm ${isActive ? 'btn-disable' : 'btn-enable'}" 
                                 onclick="adminManager.toggleUserStatus(${user.id})">
-                            ${user.ativo ? '🚫 Desativar' : '✅ Ativar'}
+                            ${isActive ? '🚫 Desativar' : '✅ Ativar'}
                         </button>
                     </div>
                 </td>
@@ -574,40 +703,55 @@ function showTab(tabName) {
     event.target.classList.add('active');
     
     // Atualizar tab atual
-    window.adminManager.currentTab = tabName;
+    if (window.adminManager) {
+        window.adminManager.currentTab = tabName;
+    }
 }
 
 function showNewUserModal() {
-    window.adminManager.showModal('newUserModal');
+    if (window.adminManager) {
+        window.adminManager.showModal('newUserModal');
+    }
 }
 
 function showNewKeyModal() {
-    window.adminManager.showModal('newKeyModal');
+    if (window.adminManager) {
+        window.adminManager.showModal('newKeyModal');
+    }
 }
 
 function closeModal(modalId) {
-    window.adminManager.closeModal(modalId);
+    if (window.adminManager) {
+        window.adminManager.closeModal(modalId);
+    }
 }
 
 function toggleExpiryField() {
-    const keyType = document.getElementById('keyType').value;
+    const keyType = document.getElementById('keyType');
     const expiryGroup = document.getElementById('expiryGroup');
+    const keyExpiry = document.getElementById('keyExpiry');
     
-    if (keyType === 'expiring') {
-        expiryGroup.style.display = 'block';
-        document.getElementById('keyExpiry').required = true;
-    } else {
-        expiryGroup.style.display = 'none';
-        document.getElementById('keyExpiry').required = false;
+    if (keyType && expiryGroup && keyExpiry) {
+        if (keyType.value === 'expiring') {
+            expiryGroup.style.display = 'block';
+            keyExpiry.required = true;
+        } else {
+            expiryGroup.style.display = 'none';
+            keyExpiry.required = false;
+        }
     }
 }
 
 function filterUsers() {
-    window.adminManager.filterUsers();
+    if (window.adminManager) {
+        window.adminManager.filterUsers();
+    }
 }
 
 function refreshLogs() {
-    window.adminManager.loadLogs();
+    if (window.adminManager) {
+        window.adminManager.loadLogs();
+    }
 }
 
 function goBack() {
