@@ -1,3 +1,7 @@
+/* ========================================
+   CONDUCTOR - ADMIN PAGE STYLES COMPLETO
+   ======================================== */
+
 /* ADMIN PAGE STYLES */
 .admin-page {
     min-height: 100vh;
@@ -288,6 +292,7 @@
 
 .users-table tr:hover, .keys-table tr:hover {
     background: rgba(255, 215, 0, 0.05);
+    border-color: var(--primary-yellow);
 }
 
 .users-table td, .keys-table td {
@@ -323,6 +328,94 @@
 .status-ativo { background: var(--success); color: black; }
 .status-inativo { background: var(--error); color: white; }
 
+/* 🆕 STATUS BADGES PARA CHAVES */
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.status-badge.status-active {
+    background: rgba(0, 255, 136, 0.2);
+    color: var(--success);
+    border: 1px solid var(--success);
+}
+
+.status-badge.status-warning {
+    background: rgba(255, 193, 7, 0.2);
+    color: var(--warning);
+    border: 1px solid var(--warning);
+    animation: pulse-warning 2s infinite;
+}
+
+.status-badge.status-expired {
+    background: rgba(255, 68, 68, 0.2);
+    color: var(--error);
+    border: 1px solid var(--error);
+}
+
+.status-badge.status-used {
+    background: rgba(102, 102, 102, 0.2);
+    color: var(--gray-lighter);
+    border: 1px solid var(--gray-lighter);
+}
+
+.status-badge.status-inactive {
+    background: rgba(255, 68, 68, 0.1);
+    color: #ff8888;
+    border: 1px solid #ff8888;
+}
+
+.status-badge.status-unknown {
+    background: rgba(255, 215, 0, 0.1);
+    color: var(--primary-yellow);
+    border: 1px solid var(--primary-yellow);
+}
+
+/* 🔄 ANIMAÇÃO DE ALERTA PARA CHAVES PRÓXIMAS DO VENCIMENTO */
+@keyframes pulse-warning {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+/* 🎨 ESTILOS PARA CHAVES DESABILITADAS */
+.key-disabled {
+    opacity: 0.6;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.key-disabled .key-code {
+    text-decoration: line-through;
+    color: var(--gray-lighter);
+}
+
+/* 📊 CORES PARA TEXTOS DE EXPIRAÇÃO */
+.text-normal {
+    color: var(--gray-lighter);
+}
+
+.text-warning {
+    color: var(--warning);
+    font-weight: 600;
+}
+
+.text-error {
+    color: var(--error);
+    font-weight: 600;
+}
+
+.text-gray {
+    color: var(--gray-lighter);
+    font-style: italic;
+}
+
 /* Action Buttons */
 .action-buttons {
     display: flex;
@@ -351,33 +444,145 @@
     transform: translateY(-1px);
 }
 
-/* Key Stats */
+/* 🔄 MELHORIAS NOS BOTÕES DE AÇÃO PEQUENOS */
+.btn-small {
+    padding: 6px 12px;
+    font-size: 11px;
+    border-radius: 4px;
+    margin: 0 2px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-small.btn-secondary {
+    background: transparent;
+    color: var(--primary-yellow);
+    border: 1px solid var(--primary-yellow);
+}
+
+.btn-small.btn-secondary:hover {
+    background: var(--primary-yellow);
+    color: var(--primary-black);
+    transform: translateY(-1px);
+}
+
+.btn-small.btn-danger {
+    background: rgba(255, 68, 68, 0.2);
+    color: var(--error);
+    border: 1px solid var(--error);
+}
+
+.btn-small.btn-danger:hover {
+    background: var(--error);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.btn-small.btn-success {
+    background: rgba(0, 255, 136, 0.2);
+    color: var(--success);
+    border: 1px solid var(--success);
+}
+
+.btn-small.btn-success:hover {
+    background: var(--success);
+    color: var(--primary-black);
+    transform: translateY(-1px);
+}
+
+/* Key Stats - ATUALIZADO COM 6 CONTADORES */
 .key-stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 15px;
     margin-bottom: 25px;
+    padding: 20px;
+    background: var(--gray-dark);
+    border-radius: 12px;
+    border: 1px solid var(--gray-medium);
 }
 
 .key-stat {
-    background: var(--gray-medium);
-    padding: 15px;
-    border-radius: 8px;
     text-align: center;
-    border: 1px solid var(--gray-light);
+    padding: 15px;
+    background: var(--primary-black);
+    border-radius: 8px;
+    border: 1px solid var(--gray-medium);
+    transition: all 0.3s ease;
+}
+
+.key-stat:hover {
+    border-color: var(--primary-yellow);
+    box-shadow: var(--glow-yellow);
+    transform: translateY(-2px);
 }
 
 .key-stat-number {
     display: block;
     font-size: 24px;
-    font-weight: bold;
+    font-weight: 700;
     color: var(--primary-yellow);
     margin-bottom: 5px;
 }
 
 .key-stat-label {
-    color: var(--gray-lighter);
     font-size: 12px;
+    color: var(--gray-lighter);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* 🆕 BOTÕES DE VERIFICAÇÃO DE CHAVES */
+.key-actions {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+
+.key-actions button {
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+/* 🎨 CÓDIGO DA CHAVE COM DESTAQUE */
+.key-code {
+    background: var(--gray-dark);
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--gray-medium);
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--primary-yellow);
+    transition: all 0.3s ease;
+}
+
+.key-code:hover {
+    border-color: var(--primary-yellow);
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+}
+
+/* 🚨 INDICADOR VISUAL PARA CHAVES CRÍTICAS */
+.key-critical {
+    position: relative;
+}
+
+.key-critical::before {
+    content: '⚠️';
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    font-size: 12px;
+    animation: pulse-warning 1.5s infinite;
 }
 
 /* Logs */
@@ -523,6 +728,15 @@
     grid-column: 1 / -1;
 }
 
+/* 🆕 ESTILOS PARA CAMPO DE EXPIRAÇÃO */
+.expiry-group {
+    display: none;
+}
+
+.expiry-group.active {
+    display: block;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .admin-header-content {
@@ -565,5 +779,31 @@
     .btn-sm {
         width: 100%;
         margin-bottom: 5px;
+    }
+
+    /* 📱 RESPONSIVIDADE PARA STATUS BADGES */
+    .status-badge {
+        font-size: 10px;
+        padding: 3px 6px;
+    }
+    
+    .btn-small {
+        font-size: 10px;
+        padding: 4px 8px;
+        margin: 1px;
+    }
+    
+    .key-stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        padding: 15px;
+    }
+    
+    .key-stat-number {
+        font-size: 18px;
+    }
+
+    .key-actions {
+        flex-direction: column;
     }
 }

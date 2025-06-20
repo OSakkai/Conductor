@@ -1,23 +1,53 @@
+// ===============================================
+// CONDUCTOR - AUTH MODULE ATUALIZADO
+// backend/src/auth/auth.module.ts
+// ===============================================
+
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+
+// Controllers e Services
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
+
+// Módulos necessários
 import { UsersModule } from '../users/users.module';
+import { ChavesModule } from '../chaves/chaves.module';  // 🆕 IMPORTAR MÓDULO DE CHAVES
 
 @Module({
   imports: [
-    UsersModule,
+    // 🔧 CONFIGURAÇÃO DO PASSPORT
     PassportModule,
+    
+    // 🔧 CONFIGURAÇÃO JWT (local - sobrescreve a global se necessário)
     JwtModule.register({
-      global: true,
-      secret: process.env.JWT_SECRET || 'sua_chave_secreta_super_forte_aqui_123',
-      signOptions: { expiresIn: '24h' },
+      secret: process.env.JWT_SECRET || 'conductor-secret-key-2025',
+      signOptions: { 
+        expiresIn: process.env.JWT_EXPIRES_IN || '24h' 
+      },
     }),
+
+    // 📋 DEPENDÊNCIAS DE OUTROS MÓDULOS
+    UsersModule,    // Para acessar UsersService
+    ChavesModule,   // 🆕 Para acessar ChavesService no registro
   ],
+
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService],
+  
+  providers: [
+    AuthService,    // Serviço principal de autenticação
+    JwtStrategy,    // Estratégia JWT para Passport
+  ],
+  
+  exports: [
+    AuthService,    // Exportar para outros módulos que precisem
+    JwtModule,      // Exportar JwtModule para reutilização
+  ],
 })
-export class AuthModule {}
+export class AuthModule {
+  constructor() {
+    console.log('🔐 AuthModule inicializado com integração de chaves');
+  }
+}

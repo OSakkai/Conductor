@@ -34,7 +34,7 @@
 
         <!-- Main Content -->
         <main class="admin-main">
-            <!-- Estatísticas Overview -->
+            <!-- Estatísticas Overview - EXPANDIDAS -->
             <div class="stats-overview">
                 <div class="stat-card">
                     <div class="stat-header">
@@ -58,20 +58,20 @@
                 
                 <div class="stat-card">
                     <div class="stat-header">
-                        <div class="stat-icon">⚡</div>
+                        <div class="stat-icon">⚠️</div>
                         <div>
-                            <div class="stat-number" id="todayActions">0</div>
-                            <div class="stat-label">Ações Hoje</div>
+                            <div class="stat-number" id="expiredKeys">0</div>
+                            <div class="stat-label">Chaves Expiradas</div>
                         </div>
                     </div>
                 </div>
                 
                 <div class="stat-card">
                     <div class="stat-header">
-                        <div class="stat-icon">🛡️</div>
+                        <div class="stat-icon">✔️</div>
                         <div>
-                            <div class="stat-number" id="adminUsers">0</div>
-                            <div class="stat-label">Administradores</div>
+                            <div class="stat-number" id="usedKeys">0</div>
+                            <div class="stat-label">Chaves Usadas</div>
                         </div>
                     </div>
                 </div>
@@ -87,8 +87,8 @@
 
                     <!-- Filtros -->
                     <div class="filters">
-                        <input type="text" id="userSearch" placeholder="🔍 Buscar usuários..." onkeyup="filterUsers()">
-                        <select id="permissionFilter" onchange="filterUsers()">
+                        <input type="text" id="userSearch" placeholder="Buscar por nome ou email...">
+                        <select id="permissionFilter">
                             <option value="">Todas as permissões</option>
                             <option value="Visitante">Visitante</option>
                             <option value="Usuario">Usuário</option>
@@ -96,10 +96,10 @@
                             <option value="Administrador">Administrador</option>
                             <option value="Desenvolvedor">Desenvolvedor</option>
                         </select>
-                        <select id="statusFilter" onchange="filterUsers()">
+                        <select id="statusFilter">
                             <option value="">Todos os status</option>
-                            <option value="ativo">Ativo</option>
-                            <option value="inativo">Inativo</option>
+                            <option value="ativo">Ativos</option>
+                            <option value="inativo">Inativos</option>
                         </select>
                     </div>
 
@@ -126,7 +126,7 @@
                 </div>
             </div>
 
-            <!-- Tab: Chaves de Acesso -->
+            <!-- Tab: Chaves de Acesso - COMPLETA -->
             <div id="keysTab" class="tab-content">
                 <div class="section-card">
                     <div class="section-header">
@@ -134,35 +134,56 @@
                         <button class="btn-new" onclick="showNewKeyModal()">+ Nova Chave</button>
                     </div>
 
-                    <!-- Estatísticas de Chaves -->
+                    <!-- Estatísticas Detalhadas de Chaves - 6 CONTADORES -->
                     <div class="key-stats">
                         <div class="key-stat">
                             <span class="key-stat-number" id="permanentKeys">0</span>
-                            <span class="key-stat-label">Permanentes</span>
+                            <span class="key-stat-label">🔑 Permanentes</span>
                         </div>
                         <div class="key-stat">
                             <span class="key-stat-number" id="expiringKeys">0</span>
-                            <span class="key-stat-label">Expiráveis</span>
+                            <span class="key-stat-label">⏰ Expiráveis</span>
                         </div>
                         <div class="key-stat">
                             <span class="key-stat-number" id="oneTimeKeys">0</span>
-                            <span class="key-stat-label">Uso Único</span>
+                            <span class="key-stat-label">1️⃣ Uso Único</span>
                         </div>
                         <div class="key-stat">
                             <span class="key-stat-number" id="usedKeys">0</span>
-                            <span class="key-stat-label">Utilizadas</span>
+                            <span class="key-stat-label">✔️ Usadas</span>
+                        </div>
+                        <div class="key-stat">
+                            <span class="key-stat-number" id="expiredKeys">0</span>
+                            <span class="key-stat-label">⏰ Expiradas</span>
+                        </div>
+                        <div class="key-stat">
+                            <span class="key-stat-number" id="expiring24h">0</span>
+                            <span class="key-stat-label">⚠️ Expirando 24h</span>
                         </div>
                     </div>
 
-                    <!-- Tabela de Chaves -->
+                    <!-- Botões de Verificação Manual -->
+                    <div class="key-actions">
+                        <button class="btn btn-secondary" onclick="adminManager.checkAllKeysStatus()">
+                            🔄 Verificar Status de Todas as Chaves
+                        </button>
+                        <button class="btn btn-secondary" onclick="adminManager.loadKeyStatistics()">
+                            📊 Atualizar Estatísticas
+                        </button>
+                        <button class="btn btn-secondary" onclick="exportKeys()">
+                            📄 Exportar Relatório
+                        </button>
+                    </div>
+
+                    <!-- Tabela de Chaves - ATUALIZADA -->
                     <div class="table-container">
-                        <table class="keys-table">
+                        <table class="users-table">
                             <thead>
                                 <tr>
-                                    <th>Chave</th>
+                                    <th>Código da Chave</th>
                                     <th>Tipo</th>
                                     <th>Permissão</th>
-                                    <th>Criado em</th>
+                                    <th>Criada em</th>
                                     <th>Expira em</th>
                                     <th>Usos</th>
                                     <th>Status</th>
@@ -192,8 +213,11 @@
                                 <option value="permission_changed">Permissão Alterada</option>
                                 <option value="key_created">Chave Criada</option>
                                 <option value="key_used">Chave Utilizada</option>
+                                <option value="key_expired">Chave Expirada</option>
+                                <option value="system_check">Verificação Sistema</option>
                             </select>
                             <button class="btn btn-secondary" onclick="refreshLogs()">🔄 Atualizar</button>
+                            <button class="btn btn-secondary" onclick="debugKeys()">🔍 Debug Chaves</button>
                         </div>
                     </div>
 
@@ -227,13 +251,7 @@
                         </div>
                         <div class="input-group">
                             <label for="newUserFunction">Função</label>
-                            <select id="newUserFunction" name="function" required>
-                                <option value="Estagiario">Estagiário</option>
-                                <option value="Analista">Analista</option>
-                                <option value="Coordenador">Coordenador</option>
-                                <option value="Gestor">Gestor</option>
-                                <option value="Diretor">Diretor</option>
-                            </select>
+                            <input type="text" id="newUserFunction" name="function" placeholder="Ex: Engenheiro">
                         </div>
                         <div class="input-group">
                             <label for="newUserPermission">Permissão</label>
@@ -258,7 +276,7 @@
             </div>
         </div>
 
-        <!-- Modal: Nova Chave -->
+        <!-- Modal: Nova Chave - COMPLETO -->
         <div id="newKeyModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -285,19 +303,21 @@
                         </select>
                     </div>
                     
+                    <!-- Campo de Expiração (mostrado apenas para chaves expiráveis) -->
                     <div class="input-group" id="expiryGroup" style="display: none;">
                         <label for="keyExpiry">Data de Expiração</label>
                         <input type="datetime-local" id="keyExpiry" name="expiry">
+                        <small class="text-gray">Defina quando esta chave deixará de funcionar</small>
                     </div>
                     
                     <div class="input-group">
                         <label for="keyDescription">Descrição (opcional)</label>
-                        <input type="text" id="keyDescription" name="description" placeholder="Ex: Chave para novo estagiário">
+                        <input type="text" id="keyDescription" name="description" placeholder="Ex: Chave para estagiários">
                     </div>
                     
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" onclick="closeModal('newKeyModal')">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">🔑 Gerar Chave</button>
+                        <button type="submit" class="btn btn-primary">🔑 Criar Chave</button>
                     </div>
                 </form>
             </div>
@@ -311,7 +331,7 @@
                     <button class="modal-close" onclick="closeModal('editUserModal')">&times;</button>
                 </div>
                 <form id="editUserForm">
-                    <input type="hidden" id="editUserId" name="userId">
+                    <input type="hidden" id="editUserId">
                     <div class="form-grid">
                         <div class="input-group">
                             <label for="editUserName">Nome de Usuário</label>
@@ -327,30 +347,7 @@
                         </div>
                         <div class="input-group">
                             <label for="editUserFunction">Função</label>
-                            <select id="editUserFunction" name="function" required>
-                                <option value="Estagiario">Estagiário</option>
-                                <option value="Analista">Analista</option>
-                                <option value="Coordenador">Coordenador</option>
-                                <option value="Gestor">Gestor</option>
-                                <option value="Diretor">Diretor</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label for="editUserPermission">Permissão</label>
-                            <select id="editUserPermission" name="permission" required>
-                                <option value="Visitante">Visitante</option>
-                                <option value="Usuario">Usuário</option>
-                                <option value="Operador">Operador</option>
-                                <option value="Administrador">Administrador</option>
-                                <option value="Desenvolvedor">Desenvolvedor</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label for="editUserStatus">Status</label>
-                            <select id="editUserStatus" name="status" required>
-                                <option value="Ativo">Ativo</option>
-                                <option value="Inativo">Inativo</option>
-                            </select>
+                            <input type="text" id="editUserFunction" name="function">
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -362,8 +359,139 @@
         </div>
     </div>
 
+    <!-- Scripts -->
     <script src="js/utils/api.js"></script>
     <script src="js/utils/auth.js"></script>
     <script src="js/pages/admin.js"></script>
+
+    <script>
+        // ===============================================
+        // FUNÇÕES GLOBAIS PARA CONTROLE DA INTERFACE
+        // ===============================================
+
+        // 🔄 Alternar campo de expiração baseado no tipo de chave
+        function toggleExpiryField() {
+            const keyType = document.getElementById('keyType').value;
+            const expiryGroup = document.getElementById('expiryGroup');
+            const expiryInput = document.getElementById('keyExpiry');
+            
+            if (keyType === 'expiring') {
+                expiryGroup.style.display = 'block';
+                expiryInput.required = true;
+                
+                // Definir data mínima como agora + 1 hora
+                const now = new Date();
+                now.setHours(now.getHours() + 1);
+                expiryInput.min = now.toISOString().slice(0, 16);
+                
+            } else {
+                expiryGroup.style.display = 'none';
+                expiryInput.required = false;
+                expiryInput.value = '';
+            }
+        }
+
+        // 🔄 Mostrar modal de nova chave
+        function showNewKeyModal() {
+            document.getElementById('newKeyModal').style.display = 'flex';
+            toggleExpiryField(); // Configurar campo de expiração
+        }
+
+        // 🔄 Mostrar modal de novo usuário
+        function showNewUserModal() {
+            document.getElementById('newUserModal').style.display = 'flex';
+        }
+
+        // 🔄 Fechar modal
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            
+            // Limpar formulários
+            const modal = document.getElementById(modalId);
+            const forms = modal.querySelectorAll('form');
+            forms.forEach(form => form.reset());
+        }
+
+        // 🔄 Navegar entre tabs
+        function showTab(tabName) {
+            // Remover active das tabs
+            document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // Ativar tab selecionada
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            // Atualizar dados da tab
+            if (window.adminManager) {
+                window.adminManager.currentTab = tabName;
+                
+                switch(tabName) {
+                    case 'users':
+                        window.adminManager.loadUsers();
+                        break;
+                    case 'keys':
+                        window.adminManager.loadKeys();
+                        window.adminManager.loadKeyStatistics();
+                        break;
+                    case 'logs':
+                        window.adminManager.loadLogs();
+                        break;
+                }
+            }
+        }
+
+        // 🔄 Voltar ao dashboard
+        function goBack() {
+            window.location.href = 'dashboard.html';
+        }
+
+        // 🔄 Atualizar logs
+        function refreshLogs() {
+            if (window.adminManager) {
+                window.adminManager.loadLogs();
+            }
+        }
+
+        // 🔄 Exportar chaves
+        function exportKeys() {
+            if (window.adminManager) {
+                window.adminManager.exportKeysReport();
+            }
+        }
+
+        // 🔄 Debug de chaves
+        function debugKeys() {
+            if (window.adminManager) {
+                window.adminManager.debugKeyStatus();
+            }
+        }
+
+        // ===============================================
+        // EVENT LISTENERS GLOBAIS
+        // ===============================================
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fechar modais com ESC
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    document.querySelectorAll('.modal').forEach(modal => {
+                        modal.style.display = 'none';
+                    });
+                }
+            });
+
+            // Fechar modais clicando fora
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        modal.style.display = 'none';
+                    }
+                });
+            });
+
+            console.log('🎯 Admin HTML carregado e event listeners configurados');
+        });
+    </script>
 </body>
 </html>
