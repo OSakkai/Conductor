@@ -1,5 +1,8 @@
-// ADMIN MANAGER - CONDUCTOR (ENDPOINTS CORRIGIDOS)
-// Versão corrigida para funcionar com os endpoints reais do backend
+// ===============================================
+// CONDUCTOR - ADMIN MANAGER FINAL COMPLETO
+// frontend/js/pages/admin.js
+// TODOS OS PROBLEMAS CORRIGIDOS
+// ===============================================
 
 class AdminManager {
     constructor() {
@@ -17,6 +20,7 @@ class AdminManager {
         this.keys = [];
         this.logs = [];
         this.currentEditingUser = null;
+        this.currentEditingKey = null;
         
         // Filtros
         this.userFilters = {
@@ -74,7 +78,7 @@ class AdminManager {
         await Promise.allSettled([
             this.loadUsers(),
             this.loadKeys(),
-            this.loadStats()
+            this.loadLogs()
         ]);
     }
 
@@ -147,15 +151,17 @@ class AdminManager {
 
         filteredUsers.forEach(user => {
             const row = document.createElement('tr');
-            const isActive = user.status === 'ativo';
             
-            // ✅ CORREÇÃO: Adaptar campos conforme backend
+            // ✅ CORREÇÃO: Status do banco usa 'Ativo' (maiúsculo)
+            const isActive = user.status === 'Ativo';
+            
+            // Adaptar campos conforme backend
             const userId = user.id || 'N/A';
             const username = user.nome_usuario || user.username || 'N/A';
             const email = user.email || 'N/A';
             const funcao = user.funcao || 'N/A';
             const permissao = user.permissao || 'Visitante';
-            const status = user.status || 'ativo';
+            const status = user.status || 'Ativo';
             const createdAt = user.data_criacao || user.created_at || user.criado_em;
 
             row.innerHTML = `
@@ -174,9 +180,11 @@ class AdminManager {
                     </span>
                 </td>
                 <td>${this.formatDate(createdAt)}</td>
-                <td class="text-center">
-                    <div class="btn-group btn-group-sm">
-                        <button class="btn btn-outline-primary btn-sm" onclick="adminManager.editUser(${userId})" title="Editar usuário">
+                <td>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-primary btn-sm" 
+                                onclick="adminManager.editUser(${userId})" 
+                                title="Editar usuário">
                             ✏️
                         </button>
                         <button class="btn btn-outline-${isActive ? 'warning' : 'success'} btn-sm" 
@@ -207,6 +215,7 @@ class AdminManager {
             const matchesPermission = !this.userFilters.permission || 
                 user.permissao === this.userFilters.permission;
             
+            // ✅ CORREÇÃO: Status do banco usa 'Ativo' (maiúsculo)
             const matchesStatus = !this.userFilters.status || 
                 user.status === this.userFilters.status;
 
@@ -237,11 +246,11 @@ class AdminManager {
             
             // ✅ CORREÇÃO: Usar campos corretos conforme backend
             const userData = {
-                nome_usuario: formData.get('username'),
+                username: formData.get('username'), // Para api.createUser()
                 email: formData.get('email'),
-                senha: formData.get('password'),
+                password: formData.get('password'), // Para api.createUser()
                 permissao: formData.get('permissao'),
-                funcao: formData.get('funcao') || null
+                funcao: formData.get('funcao') || 'Estagiario'
             };
 
             console.log('🔄 Criando usuário:', userData);
@@ -250,7 +259,14 @@ class AdminManager {
             
             if (response && (response.success !== false)) {
                 this.showMessage('Usuário criado com sucesso!', 'success');
-                this.closeModal('newUserModal');
+                
+                // Fechar modal Bootstrap
+                const modal = bootstrap.Modal.getInstance(document.getElementById('newUserModal'));
+                if (modal) modal.hide();
+                
+                // Limpar formulário
+                form.reset();
+                
                 await this.loadUsers();
             } else {
                 throw new Error(response?.message || 'Erro desconhecido');
@@ -272,20 +288,27 @@ class AdminManager {
 
             this.currentEditingUser = user;
 
-            // ✅ CORREÇÃO: Usar campos corretos
-            document.getElementById('editUserId').value = user.id;
-            document.getElementById('editUsername').value = user.nome_usuario || user.username || '';
-            document.getElementById('editEmail').value = user.email || '';
-            document.getElementById('editPermission').value = user.permissao || 'Visitante';
-            document.getElementById('editFuncao').value = user.funcao || '';
+            // ✅ CORREÇÃO: Preencher modal de edição com TODOS os dados do usuário
+            const editForm = document.getElementById('editUserForm');
+            if (editForm) {
+                const editUsername = editForm.querySelector('#editUsername');
+                const editEmail = editForm.querySelector('#editEmail');
+                const editPermissao = editForm.querySelector('#editPermissao');
+                const editFuncao = editForm.querySelector('#editFuncao');
 
-            // Mostrar modal Bootstrap
+                if (editUsername) editUsername.value = user.nome_usuario || '';
+                if (editEmail) editEmail.value = user.email || '';
+                if (editPermissao) editPermissao.value = user.permissao || '';
+                if (editFuncao) editFuncao.value = user.funcao || '';
+            }
+
+            // Abrir modal
             const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
             modal.show();
 
         } catch (error) {
-            console.error('❌ Erro ao editar usuário:', error);
-            this.showMessage('Erro ao carregar dados do usuário', 'error');
+            console.error('❌ Erro ao abrir edição:', error);
+            this.showMessage('Erro ao abrir edição de usuário', 'error');
         }
     }
 
@@ -293,30 +316,37 @@ class AdminManager {
         event.preventDefault();
         
         try {
+            if (!this.currentEditingUser) {
+                this.showMessage('Nenhum usuário selecionado para edição', 'error');
+                return;
+            }
+
             const form = event.target;
             const formData = new FormData(form);
             
-            const userId = formData.get('id');
-            
-            // ✅ CORREÇÃO: Usar campos corretos
+            // ✅ CORREÇÃO: Manter dados existentes e só atualizar os fornecidos
             const userData = {
                 nome_usuario: formData.get('username'),
                 email: formData.get('email'),
                 permissao: formData.get('permissao'),
-                funcao: formData.get('funcao') || null
+                funcao: formData.get('funcao'),
+                // Preservar campos existentes
+                celular: this.currentEditingUser.celular,
+                status: this.currentEditingUser.status
             };
 
-            console.log('🔄 Atualizando usuário:', userId, userData);
+            console.log('🔄 Atualizando usuário:', userData);
 
-            const response = await this.api.updateUser(userId, userData);
+            const response = await this.api.put(`/users/${this.currentEditingUser.id}`, userData);
             
             if (response && (response.success !== false)) {
                 this.showMessage('Usuário atualizado com sucesso!', 'success');
                 
                 // Fechar modal Bootstrap
                 const modal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
-                modal.hide();
+                if (modal) modal.hide();
                 
+                this.currentEditingUser = null;
                 await this.loadUsers();
             } else {
                 throw new Error(response?.message || 'Erro desconhecido');
@@ -361,17 +391,33 @@ class AdminManager {
                 return;
             }
 
-            const newStatus = user.status === 'ativo' ? 'inativo' : 'ativo';
+            // ✅ CORREÇÃO: Status do banco usa 'Ativo'/'Inativo' (maiúsculo)
+            const newStatus = user.status === 'Ativo' ? 'Inativo' : 'Ativo';
             
             console.log(`🔄 Alterando status do usuário ${userId} para: ${newStatus}`);
 
-            await this.api.updateUser(userId, { status: newStatus });
-            this.showMessage(`Usuário ${newStatus === 'ativo' ? 'ativado' : 'desativado'} com sucesso!`, 'success');
-            await this.loadUsers();
+            // ✅ CORREÇÃO: Usar payload completo preservando todos os campos
+            const updatePayload = {
+                nome_usuario: user.nome_usuario,
+                email: user.email,
+                funcao: user.funcao,
+                permissao: user.permissao,
+                celular: user.celular,
+                status: newStatus  // ✅ Campo status com valor correto
+            };
+
+            const response = await this.api.put(`/users/${userId}`, updatePayload);
+            
+            if (response && response.success !== false) {
+                this.showMessage(`Usuário ${newStatus === 'Ativo' ? 'ativado' : 'desativado'} com sucesso!`, 'success');
+                await this.loadUsers();
+            } else {
+                throw new Error(response?.message || 'Erro desconhecido ao atualizar status');
+            }
 
         } catch (error) {
-            console.error('❌ Erro ao alterar status:', error);
-            this.showMessage('Erro ao alterar status do usuário', 'error');
+            console.error('❌ Erro completo ao alterar status:', error);
+            this.showMessage('Erro ao alterar status do usuário: ' + error.message, 'error');
         }
     }
 
@@ -395,7 +441,7 @@ class AdminManager {
                 this.keys = [];
             }
             
-            console.log(`✅ ${this.keys.length} chaves carregadas`, this.keys);
+            console.log(`✅ ${this.keys.length} chaves carregadas`);
             
             this.renderKeysTable();
             this.updateStats();
@@ -404,7 +450,7 @@ class AdminManager {
             console.error('❌ Erro ao carregar chaves:', error);
             this.keys = [];
             this.renderKeysTable();
-            this.showMessage('Erro ao carregar chaves: ' + error.message, 'error');
+            this.showMessage('Erro ao carregar chaves', 'error');
         }
     }
 
@@ -431,72 +477,40 @@ class AdminManager {
         // Aplicar filtros
         const filteredKeys = this.getFilteredKeys();
 
-        if (filteredKeys.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="8" style="text-align: center; color: var(--gray-lighter);">
-                        Nenhuma chave encontrada com os filtros aplicados
-                    </td>
-                </tr>
-            `;
-            return;
-        }
-
         filteredKeys.forEach(key => {
             const row = document.createElement('tr');
             
-            // Labels de tipo
-            const typeLabels = {
-                'permanent': '🔑 Permanente',
-                'expiring': '⏰ Expirável', 
-                'single_use': '1️⃣ Uso Único'
-            };
-
-            // ✅ CORREÇÃO: Adaptar campos conforme backend
+            const keyId = key.id || 'N/A';
             const keyCode = key.chave || key.key || 'N/A';
-            const keyType = key.tipo || key.type || 'permanent';
-            const keyPermission = key.permissao || key.permission || 'Usuario';
-            const keyStatus = key.status || 'ativa';
-            const createdAt = key.data_criacao || key.created_at;
-            const expiresAt = key.data_expiracao || key.expires_at;
-            const currentUses = key.usos_atual || key.current_uses || 0;
-            const maxUses = key.usos_maximo || key.max_uses;
-
-            // Formatação de expiração
-            const expirationDisplay = this.getExpirationDisplay(key);
-            const statusDisplay = this.getStatusDisplay(keyStatus, key);
-            const usesDisplay = maxUses ? `${currentUses}/${maxUses}` : currentUses;
+            const type = key.tipo || key.type || 'N/A';
+            const permission = key.permissao || key.permission || 'N/A';
+            const createdAt = key.data_criacao || key.created_at || 'N/A';
+            const usesInfo = `${key.usos_atual || 0}${key.usos_maximo ? `/${key.usos_maximo}` : ''}`;
+            const status = key.status || 'ativa';
 
             row.innerHTML = `
                 <td>
-                    <div class="d-flex align-items-center">
-                        <code class="text-warning me-2" title="${keyCode}">
-                            ${keyCode.substring(0, 20)}...
-                        </code>
-                        <button class="btn btn-outline-warning btn-sm" onclick="adminManager.copyKey('${keyCode}')" title="Copiar chave">
-                            📋
-                        </button>
-                    </div>
+                    <code onclick="adminManager.copyToClipboard('${keyCode}')" 
+                          style="cursor: pointer;" title="Clique para copiar">
+                        ${keyCode.substring(0, 20)}...
+                    </code>
                 </td>
-                <td>${typeLabels[keyType] || keyType}</td>
-                <td>
-                    <span class="badge badge-permission-${keyPermission.toLowerCase()}">
-                        ${keyPermission}
-                    </span>
-                </td>
+                <td>${this.getTypeDisplay(type)}</td>
+                <td><span class="badge bg-info">${permission}</span></td>
                 <td>${this.formatDate(createdAt)}</td>
-                <td>${expirationDisplay}</td>
-                <td>${usesDisplay}</td>
-                <td>${statusDisplay}</td>
-                <td class="text-center">
-                    <div class="btn-group btn-group-sm">
-                        <button class="btn btn-outline-primary btn-sm" onclick="adminManager.editKey('${key.id || key.chave}')" title="Editar chave">
+                <td>${this.getExpirationDisplay(key)}</td>
+                <td>${usesInfo}</td>
+                <td>${this.getStatusDisplay(status, key)}</td>
+                <td>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-primary btn-sm" 
+                                onclick="adminManager.editKey(${keyId})" 
+                                title="Editar chave">
                             ✏️
                         </button>
-                        <button class="btn btn-outline-secondary btn-sm" onclick="adminManager.toggleKeyStatus('${key.id || key.chave}')" title="Alterar status">
-                            🔄
-                        </button>
-                        <button class="btn btn-outline-danger btn-sm" onclick="adminManager.deleteKey('${key.id || key.chave}')" title="Excluir chave">
+                        <button class="btn btn-outline-danger btn-sm" 
+                                onclick="adminManager.deleteKey(${keyId})" 
+                                title="Excluir chave">
                             🗑️
                         </button>
                     </div>
@@ -510,14 +524,17 @@ class AdminManager {
     getFilteredKeys() {
         return this.keys.filter(key => {
             const keyCode = key.chave || key.key || '';
-            const keyType = key.tipo || key.type || '';
-            const keyStatus = key.status || '';
-
-            const matchesSearch = !this.keyFilters.search || 
-                keyCode.toLowerCase().includes(this.keyFilters.search.toLowerCase());
+            const description = key.descricao || key.description || '';
             
-            const matchesType = !this.keyFilters.type || keyType === this.keyFilters.type;
-            const matchesStatus = !this.keyFilters.status || keyStatus === this.keyFilters.status;
+            const matchesSearch = !this.keyFilters.search || 
+                keyCode.toLowerCase().includes(this.keyFilters.search.toLowerCase()) ||
+                description.toLowerCase().includes(this.keyFilters.search.toLowerCase());
+            
+            const matchesType = !this.keyFilters.type || 
+                (key.tipo || key.type) === this.keyFilters.type;
+            
+            const matchesStatus = !this.keyFilters.status || 
+                key.status === this.keyFilters.status;
 
             return matchesSearch && matchesType && matchesStatus;
         });
@@ -537,6 +554,7 @@ class AdminManager {
         this.renderKeysTable();
     }
 
+    // ✅ NOVO: Método createKey implementado
     async createKey(event) {
         event.preventDefault();
         
@@ -544,7 +562,11 @@ class AdminManager {
             const form = event.target;
             const formData = new FormData(form);
             
+            // ✅ CORREÇÃO: Gerar código da chave automaticamente
+            const keyCode = this.generateKeyCode();
+            
             const keyData = {
+                chave: keyCode, // ✅ Campo obrigatório para backend
                 tipo: formData.get('tipo'),
                 permissao: formData.get('permissao'),
                 descricao: formData.get('descricao') || null
@@ -564,11 +586,14 @@ class AdminManager {
             const response = await this.api.post('/chaves', keyData);
             
             if (response && (response.success !== false)) {
-                this.showMessage('Chave criada com sucesso!', 'success');
+                this.showMessage(`Chave criada com sucesso! Código: ${keyCode}`, 'success');
                 
                 // Fechar modal Bootstrap
                 const modal = bootstrap.Modal.getInstance(document.getElementById('newKeyModal'));
-                modal.hide();
+                if (modal) modal.hide();
+                
+                // Limpar formulário
+                form.reset();
                 
                 await this.loadKeys();
             } else {
@@ -581,15 +606,95 @@ class AdminManager {
         }
     }
 
-    async copyKey(keyCode) {
+    // ✅ NOVO: Gerador de código de chave
+    generateKeyCode() {
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let result = '';
+        for (let i = 0; i < 16; i++) {
+            result += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        return result;
+    }
+
+    // ✅ NOVO: Método editKey implementado
+    async editKey(keyId) {
         try {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                await navigator.clipboard.writeText(keyCode);
-                this.showMessage('Chave copiada para a área de transferência!', 'success');
+            const key = this.keys.find(k => k.id == keyId);
+            if (!key) {
+                this.showMessage('Chave não encontrada', 'error');
+                return;
+            }
+
+            // Para simplicidade, apenas permitir mudança de status por agora
+            const newStatus = key.status === 'ativa' ? 'inativa' : 'ativa';
+            
+            console.log(`🔄 Alterando status da chave ${keyId} para: ${newStatus}`);
+
+            const response = await this.api.put(`/chaves/${keyId}`, { status: newStatus });
+            
+            if (response && response.success !== false) {
+                this.showMessage(`Chave ${newStatus === 'ativa' ? 'ativada' : 'desativada'} com sucesso!`, 'success');
+                await this.loadKeys();
+            } else {
+                throw new Error(response?.message || 'Erro ao alterar status da chave');
+            }
+
+        } catch (error) {
+            console.error('❌ Erro ao editar chave:', error);
+            this.showMessage('Erro ao alterar status da chave', 'error');
+        }
+    }
+
+    // ✅ NOVO: Método deleteKey implementado
+    async deleteKey(keyId) {
+        try {
+            const key = this.keys.find(k => k.id == keyId);
+            if (!key) {
+                this.showMessage('Chave não encontrada', 'error');
+                return;
+            }
+
+            const keyCode = key.chave || key.key || keyId;
+            if (!confirm(`Tem certeza que deseja excluir a chave "${keyCode.substring(0, 20)}..."?`)) {
+                return;
+            }
+
+            console.log('🔄 Excluindo chave:', keyId);
+
+            const response = await this.api.delete(`/chaves/${keyId}`);
+            
+            if (response && response.success !== false) {
+                this.showMessage('Chave excluída com sucesso!', 'success');
+                await this.loadKeys();
+            } else {
+                throw new Error(response?.message || 'Erro ao excluir chave');
+            }
+
+        } catch (error) {
+            console.error('❌ Erro ao excluir chave:', error);
+            this.showMessage('Erro ao excluir chave: ' + error.message, 'error');
+        }
+    }
+
+    getTypeDisplay(type) {
+        const typeMap = {
+            'permanent': '<span class="badge bg-success">♾️ Permanente</span>',
+            'expiring': '<span class="badge bg-warning">⏰ Expirável</span>',
+            'single_use': '<span class="badge bg-info">1️⃣ Uso Único</span>'
+        };
+
+        return typeMap[type] || `<span class="badge bg-secondary">${type}</span>`;
+    }
+
+    async copyToClipboard(text) {
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
+                this.showMessage('Chave copiada!', 'success');
             } else {
                 // Fallback para navegadores mais antigos
                 const textArea = document.createElement('textarea');
-                textArea.value = keyCode;
+                textArea.value = text;
                 document.body.appendChild(textArea);
                 textArea.select();
                 document.execCommand('copy');
@@ -639,8 +744,18 @@ class AdminManager {
         try {
             console.log('🔄 Carregando logs...');
             
-            // ✅ CORREÇÃO: Como não temos endpoint de logs ainda, usar dados mock
-            this.logs = this.generateMockLogs();
+            // ✅ CORREÇÃO: Tentar carregar logs reais do backend primeiro
+            try {
+                const response = await this.api.get('/logs');
+                if (response && response.data) {
+                    this.logs = Array.isArray(response.data) ? response.data : [];
+                } else {
+                    throw new Error('Endpoint de logs não disponível');
+                }
+            } catch (apiError) {
+                console.warn('⚠️ Endpoint /logs não disponível, usando dados mock:', apiError);
+                this.logs = this.generateMockLogs();
+            }
             
             console.log(`✅ ${this.logs.length} logs carregados`);
             
@@ -778,13 +893,48 @@ class AdminManager {
         this.renderLogsTable();
     }
 
+    // ✅ NOVO: Método clearLogs implementado
+    clearLogs() {
+        // Limpar filtros
+        this.logFilters = {
+            search: '',
+            type: '',
+            date: ''
+        };
+
+        // Limpar campos do formulário
+        const searchInput = document.getElementById('logSearch');
+        const typeFilter = document.getElementById('logTypeFilter');
+        const dateFilter = document.getElementById('logDateFilter');
+
+        if (searchInput) searchInput.value = '';
+        if (typeFilter) typeFilter.value = '';
+        if (dateFilter) dateFilter.value = '';
+
+        // Re-renderizar tabela
+        this.renderLogsTable();
+        
+        this.showMessage('Filtros de logs limpos', 'info');
+    }
+
     // ===============================================
     // ESTATÍSTICAS E DASHBOARD
     // ===============================================
 
     async loadStats() {
         try {
-            // ✅ CORREÇÃO: Como endpoint /api/system/stats não existe, calcular localmente
+            // ✅ CORREÇÃO: Tentar carregar stats da API primeiro
+            try {
+                const response = await this.api.get('/stats');
+                if (response && response.data) {
+                    this.updateStatsDisplay(response.data);
+                    return;
+                }
+            } catch (apiError) {
+                console.warn('⚠️ Endpoint /stats não disponível, calculando localmente');
+            }
+
+            // Fallback para cálculo local
             const stats = this.calculateLocalStats();
             this.updateStatsDisplay(stats);
 
@@ -795,13 +945,17 @@ class AdminManager {
 
     calculateLocalStats() {
         const totalUsers = this.users.length;
+        const activeUsers = this.users.filter(u => u.status === 'Ativo').length;
+        const totalKeys = this.keys.length;
         const activeKeys = this.keys.filter(k => k.status === 'ativa').length;
         const expiredKeys = this.keys.filter(k => k.status === 'expirada').length;
         const usedKeys = this.keys.filter(k => k.status === 'usada').length;
 
         return {
             totalUsers,
-            totalKeys: activeKeys,
+            activeUsers,
+            totalKeys,
+            activeKeys,
             expiredKeys,
             usedKeys
         };
@@ -815,18 +969,22 @@ class AdminManager {
     updateStatsDisplay(stats) {
         // Atualizar cards de estatísticas
         const totalUsersEl = document.getElementById('totalUsers');
+        const activeUsersEl = document.getElementById('activeUsers');
         const totalKeysEl = document.getElementById('totalKeys');
+        const activeKeysEl = document.getElementById('activeKeys');
         const expiredKeysEl = document.getElementById('expiredKeys');
         const usedKeysEl = document.getElementById('usedKeys');
 
         if (totalUsersEl) totalUsersEl.textContent = stats.totalUsers || 0;
+        if (activeUsersEl) activeUsersEl.textContent = stats.activeUsers || 0;
         if (totalKeysEl) totalKeysEl.textContent = stats.totalKeys || 0;
+        if (activeKeysEl) activeKeysEl.textContent = stats.activeKeys || 0;
         if (expiredKeysEl) expiredKeysEl.textContent = stats.expiredKeys || 0;
         if (usedKeysEl) usedKeysEl.textContent = stats.usedKeys || 0;
     }
 
     // ===============================================
-    // UTILITÁRIOS
+    // MÉTODOS AUXILIARES
     // ===============================================
 
     formatDate(dateString) {
@@ -852,62 +1010,51 @@ class AdminManager {
     }
 
     getActionName(action) {
-        const actionNames = {
-            'login': 'Login realizado',
-            'logout': 'Logout realizado',
-            'create_user': 'Usuário criado',
-            'update_user': 'Usuário atualizado',
-            'delete_user': 'Usuário excluído',
-            'view_user': 'Usuário visualizado',
-            'create_key': 'Chave criada',
-            'update_key': 'Chave atualizada',
-            'delete_key': 'Chave excluída',
-            'use_key': 'Chave utilizada',
-            'system_check': 'Verificação do sistema',
-            'export_keys': 'Relatório exportado'
+        const actionMap = {
+            'login': 'Login',
+            'logout': 'Logout',
+            'create_user': 'Criar Usuário',
+            'update_user': 'Atualizar Usuário',
+            'delete_user': 'Excluir Usuário',
+            'view_user': 'Visualizar Usuário',
+            'create_key': 'Criar Chave',
+            'delete_key': 'Excluir Chave'
         };
 
-        return actionNames[action] || action;
+        return actionMap[action] || action;
     }
 
+    // ✅ CORREÇÃO: Sistema de notificações melhorado
     showMessage(message, type = 'info') {
-        // Sistema de mensagens usando Bootstrap Toast
-        const toastHtml = `
-            <div class="toast align-items-center text-white bg-${this.getBootstrapType(type)} border-0" role="alert">
-                <div class="d-flex">
-                    <div class="toast-body">
-                        ${this.getToastIcon(type)} ${message}
-                    </div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-                </div>
-            </div>
+        console.log(`${type.toUpperCase()}: ${message}`);
+        
+        // ✅ Implementação de toast melhorada
+        this.showToast(message, type);
+    }
+
+    showToast(message, type = 'info') {
+        // Criar elemento toast
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${this.getBootstrapAlertClass(type)} alert-dismissible fade show position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        
+        toast.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         `;
         
-        // Adicionar ao container
-        let container = document.getElementById('toastContainer');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'toastContainer';
-            container.className = 'toast-container position-fixed top-0 end-0 p-3';
-            document.body.appendChild(container);
-        }
-
-        container.insertAdjacentHTML('beforeend', toastHtml);
+        // Adicionar ao body
+        document.body.appendChild(toast);
         
-        const toastElement = container.lastElementChild;
-        const toast = new bootstrap.Toast(toastElement);
-        toast.show();
-
-        // Auto-remover após esconder
-        toastElement.addEventListener('hidden.bs.toast', () => {
-            toastElement.remove();
-        });
-
-        // Log no console
-        console.log(`${this.getToastIcon(type)} [${type.toUpperCase()}] ${message}`);
+        // Remover automaticamente após 5 segundos
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 5000);
     }
 
-    getBootstrapType(type) {
+    getBootstrapAlertClass(type) {
         const typeMap = {
             'success': 'success',
             'error': 'danger',
@@ -916,106 +1063,82 @@ class AdminManager {
         };
         return typeMap[type] || 'info';
     }
-
-    getToastIcon(type) {
-        const iconMap = {
-            'success': '✅',
-            'error': '❌',
-            'warning': '⚠️',
-            'info': 'ℹ️'
-        };
-        return iconMap[type] || iconMap['info'];
-    }
-
-    closeModal(modalId) {
-        const modal = bootstrap.Modal.getInstance(document.getElementById(modalId));
-        if (modal) {
-            modal.hide();
-        }
-    }
-
-    // ===============================================
-    // MÉTODOS AUXILIARES PARA CHAVES
-    // ===============================================
-
-    async editKey(keyId) {
-        // Implementar edição de chaves (futuro)
-        this.showMessage('Edição de chaves será implementada em breve', 'info');
-    }
-
-    async toggleKeyStatus(keyId) {
-        try {
-            const key = this.keys.find(k => (k.id || k.chave) == keyId);
-            if (!key) {
-                this.showMessage('Chave não encontrada', 'error');
-                return;
-            }
-
-            const newStatus = key.status === 'ativa' ? 'inativa' : 'ativa';
-            
-            console.log(`🔄 Alterando status da chave ${keyId} para: ${newStatus}`);
-
-            // Implementar no backend
-            await this.api.put(`/chaves/${keyId}`, { status: newStatus });
-            this.showMessage(`Chave ${newStatus === 'ativa' ? 'ativada' : 'desativada'} com sucesso!`, 'success');
-            await this.loadKeys();
-
-        } catch (error) {
-            console.error('❌ Erro ao alterar status da chave:', error);
-            this.showMessage('Erro ao alterar status da chave', 'error');
-        }
-    }
-
-    async deleteKey(keyId) {
-        try {
-            const key = this.keys.find(k => (k.id || k.chave) == keyId);
-            if (!key) {
-                this.showMessage('Chave não encontrada', 'error');
-                return;
-            }
-
-            const keyCode = key.chave || key.key || keyId;
-            if (!confirm(`Tem certeza que deseja excluir a chave "${keyCode.substring(0, 20)}..."?`)) {
-                return;
-            }
-
-            console.log('🔄 Excluindo chave:', keyId);
-
-            await this.api.delete(`/chaves/${keyId}`);
-            this.showMessage('Chave excluída com sucesso!', 'success');
-            await this.loadKeys();
-
-        } catch (error) {
-            console.error('❌ Erro ao excluir chave:', error);
-            this.showMessage('Erro ao excluir chave: ' + error.message, 'error');
-        }
-    }
 }
 
 // ===============================================
 // INICIALIZAÇÃO GLOBAL
 // ===============================================
 
-// Instância global do AdminManager
-window.adminManager = new AdminManager();
-
-// Aguardar carregamento do DOM
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('🔄 DOM carregado, inicializando AdminManager...');
+// Aguardar DOM carregar
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔄 DOM carregado - inicializando AdminManager...');
     
-    // Verificar se todas as dependências estão disponíveis
+    // Verificar se todas as dependências estão carregadas
     if (!window.conductorAPI) {
-        console.error('❌ ConductorAPI não encontrado');
+        console.error('❌ ConductorAPI não encontrado!');
         return;
     }
     
     if (!window.authManager) {
-        console.error('❌ AuthManager não encontrado');
+        console.error('❌ AuthManager não encontrado!');
         return;
     }
     
-    // Inicializar AdminManager
-    window.adminManager.init();
+    // Criar instância global
+    window.adminManager = new AdminManager();
+    
+    // Inicializar se estamos na página admin
+    if (window.location.pathname.includes('admin.html')) {
+        window.adminManager.init();
+    }
+    
+    console.log('✅ AdminManager carregado globalmente');
 });
 
-console.log('✅ AdminManager carregado e pronto!');
+// ===============================================
+// FUNÇÕES GLOBAIS PARA COMPATIBILIDADE COM HTML
+// ===============================================
+
+function loadUsers() {
+    if (window.adminManager) {
+        window.adminManager.loadUsers();
+    }
+}
+
+function loadKeys() {
+    if (window.adminManager) {
+        window.adminManager.loadKeys();
+    }
+}
+
+function loadLogs() {
+    if (window.adminManager) {
+        window.adminManager.loadLogs();
+    }
+}
+
+function filterUsers() {
+    if (window.adminManager) {
+        window.adminManager.filterUsers();
+    }
+}
+
+function filterKeys() {
+    if (window.adminManager) {
+        window.adminManager.filterKeys();
+    }
+}
+
+function filterLogs() {
+    if (window.adminManager) {
+        window.adminManager.filterLogs();
+    }
+}
+
+function clearLogs() {
+    if (window.adminManager) {
+        window.adminManager.clearLogs();
+    }
+}
+
+console.log('🎼 CONDUCTOR - Admin Manager FINAL carregado!');

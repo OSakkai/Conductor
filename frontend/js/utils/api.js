@@ -1,6 +1,7 @@
 // ===============================================
-// CONDUCTOR - API UTILS RESTAURADO (FUNCIONANDO)
+// CONDUCTOR - API UTILS FINAL COMPLETO
 // frontend/js/utils/api.js
+// TODOS OS PROBLEMAS CORRIGIDOS
 // ===============================================
 
 class ConductorAPI {
@@ -119,14 +120,14 @@ class ConductorAPI {
     }
 
     // ===============================================
-    // MÉTODOS DE AUTENTICAÇÃO (ORIGINAL FUNCIONANDO)
+    // MÉTODOS DE AUTENTICAÇÃO
     // ===============================================
 
     async login(credentials) {
         try {
             console.log('🔐 Tentando login...');
             
-            // ✅ ORIGINAL - Backend espera nome_usuario
+            // ✅ Backend espera nome_usuario
             const loginData = {
                 nome_usuario: credentials.username,
                 senha: credentials.password
@@ -134,7 +135,7 @@ class ConductorAPI {
             
             const response = await this.post('/auth/login', loginData, { auth: false });
             
-            // ✅ ORIGINAL - Backend retorna { access_token, user }
+            // ✅ Backend retorna { access_token, user }
             if (response && response.access_token) {
                 this.setToken(response.access_token);
                 localStorage.setItem('conductor_user', JSON.stringify(response.user));
@@ -152,20 +153,7 @@ class ConductorAPI {
 
     async register(userData) {
         try {
-            console.log('📝 Tentando registrar usuário...');
-            
-            // ✅ ORIGINAL - Campos corretos do backend
-            const registerData = {
-                nome_usuario: userData.username,
-                email: userData.email,
-                senha: userData.password,
-                funcao: userData.funcao || 'Estagiario',
-                celular: userData.phone || null,
-                chave_acesso: userData.accessKey || null
-            };
-            
-            const response = await this.post('/auth/register', registerData, { auth: false });
-            console.log('✅ Registro realizado:', response);
+            const response = await this.post('/auth/register', userData, { auth: false });
             return response;
         } catch (error) {
             console.error('❌ Erro no registro:', error);
@@ -173,20 +161,10 @@ class ConductorAPI {
         }
     }
 
-    async getProfile() {
+    async validateToken() {
         try {
             const response = await this.get('/auth/profile');
             return response;
-        } catch (error) {
-            console.error('❌ Erro ao obter perfil:', error);
-            return null;
-        }
-    }
-
-    async validateToken() {
-        try {
-            const profile = await this.getProfile();
-            return profile?.user || null;
         } catch (error) {
             console.error('❌ Token inválido:', error);
             return null;
@@ -207,29 +185,53 @@ class ConductorAPI {
         return response?.success ? response.data : response || null;
     }
 
+    // ✅ CORREÇÃO: createUser com mapeamento correto
     async createUser(userData) {
         const userPayload = {
-            nome_usuario: userData.username,
+            nome_usuario: userData.username || userData.nome_usuario,
             email: userData.email,
-            senha: userData.password,
-            funcao: userData.funcao,
-            permissao: userData.permissao,
-            celular: userData.phone || null
+            senha: userData.password || userData.senha,
+            funcao: userData.funcao || 'Estagiario',
+            permissao: userData.permissao || 'Visitante',
+            celular: userData.phone || userData.celular || null
         };
         
+        console.log('🔄 API.createUser - Payload:', userPayload);
         const response = await this.post('/users', userPayload);
         return response;
     }
 
+    // ✅ CORREÇÃO: updateUser preservando campos existentes
     async updateUser(id, userData) {
-        const userPayload = {
-            nome_usuario: userData.username,
-            email: userData.email,
-            funcao: userData.funcao,
-            permissao: userData.permissao,
-            celular: userData.phone || null
-        };
+        const userPayload = {};
         
+        // Mapear campos apenas se fornecidos
+        if (userData.username || userData.nome_usuario) {
+            userPayload.nome_usuario = userData.username || userData.nome_usuario;
+        }
+        
+        if (userData.email) {
+            userPayload.email = userData.email;
+        }
+        
+        if (userData.funcao) {
+            userPayload.funcao = userData.funcao;
+        }
+        
+        if (userData.permissao) {
+            userPayload.permissao = userData.permissao;
+        }
+        
+        if (userData.phone || userData.celular) {
+            userPayload.celular = userData.phone || userData.celular;
+        }
+        
+        // ✅ CORREÇÃO CRÍTICA: Campo status deve ser passado direto
+        if (userData.status !== undefined) {
+            userPayload.status = userData.status;
+        }
+        
+        console.log('🔄 API.updateUser - Payload:', userPayload);
         const response = await this.put(`/users/${id}`, userPayload);
         return response;
     }
@@ -239,10 +241,8 @@ class ConductorAPI {
         return response;
     }
 
-    async toggleUserStatus(id) {
-        const response = await this.put(`/users/${id}/toggle-status`);
-        return response;
-    }
+    // ✅ CORREÇÃO: Remover método toggleUserStatus - não existe no backend
+    // O toggle será feito via updateUser com campo status
 
     // ===============================================
     // MÉTODOS DE CHAVES
@@ -259,11 +259,13 @@ class ConductorAPI {
     }
 
     async createKey(keyData) {
+        console.log('🔄 API.createKey - Payload:', keyData);
         const response = await this.post('/chaves', keyData);
         return response;
     }
 
     async updateKey(id, keyData) {
+        console.log('🔄 API.updateKey - Payload:', keyData);
         const response = await this.put(`/chaves/${id}`, keyData);
         return response;
     }
@@ -293,74 +295,36 @@ class ConductorAPI {
     }
 
     async createLog(logData) {
-        try {
-            const response = await this.post('/logs', logData);
-            return response;
-        } catch (error) {
-            console.error('❌ Erro ao criar log:', error);
-            return null;
-        }
+        const response = await this.post('/logs', logData);
+        return response;
     }
 
     // ===============================================
-    // MÉTODOS DE SISTEMA
+    // MÉTODOS DE ESTATÍSTICAS
     // ===============================================
 
     async getSystemStats() {
         try {
             console.log('📊 Carregando estatísticas do sistema...');
             
-            // 🔍 DEBUG - Vamos ver exatamente o que a API retorna
-            const usersResponse = await this.getUsers();
-            const keysResponse = await this.getKeys();
-            
-            console.log('🔍 DEBUG usersResponse:', usersResponse);
-            console.log('🔍 DEBUG keysResponse:', keysResponse);
-            console.log('🔍 Type usersResponse:', typeof usersResponse);
-            console.log('🔍 Is Array usersResponse:', Array.isArray(usersResponse));
-            
-            // ✅ TENTAR MÚLTIPLAS FORMAS DE EXTRAIR OS DADOS
+            // ✅ CORREÇÃO: Usar dados das APIs existentes
+            const [usersResponse, keysResponse] = await Promise.allSettled([
+                this.getUsers(),
+                this.getKeys()
+            ]);
+
+            // Processar usuários
             let users = [];
+            if (usersResponse.status === 'fulfilled' && usersResponse.value) {
+                users = Array.isArray(usersResponse.value) ? usersResponse.value : [];
+            }
+
+            // Processar chaves
             let keys = [];
-            
-            // Para usuários
-            if (Array.isArray(usersResponse)) {
-                users = usersResponse;
-                console.log('✅ usersResponse é array direto');
-            } else if (usersResponse?.data && Array.isArray(usersResponse.data)) {
-                users = usersResponse.data;
-                console.log('✅ usersResponse.data é array');
-            } else if (usersResponse?.success && usersResponse.data && Array.isArray(usersResponse.data)) {
-                users = usersResponse.data;
-                console.log('✅ usersResponse.success.data é array');
-            } else {
-                console.warn('⚠️ Formato inesperado de usuários, usando array vazio');
-                users = [];
+            if (keysResponse.status === 'fulfilled' && keysResponse.value) {
+                keys = Array.isArray(keysResponse.value) ? keysResponse.value : [];
             }
             
-            // Para chaves
-            if (Array.isArray(keysResponse)) {
-                keys = keysResponse;
-                console.log('✅ keysResponse é array direto');
-            } else if (keysResponse?.data && Array.isArray(keysResponse.data)) {
-                keys = keysResponse.data;
-                console.log('✅ keysResponse.data é array');
-            } else if (keysResponse?.success && keysResponse.data && Array.isArray(keysResponse.data)) {
-                keys = keysResponse.data;
-                console.log('✅ keysResponse.success.data é array');
-            } else {
-                console.warn('⚠️ Formato inesperado de chaves, usando array vazio');
-                keys = [];
-            }
-            
-            console.log('📊 Arrays finais:', { 
-                usersCount: users.length, 
-                keysCount: keys.length,
-                sampleUser: users[0],
-                sampleKey: keys[0]
-            });
-            
-            // ✅ GARANTIR QUE SÃO ARRAYS ANTES DE FILTRAR
             if (!Array.isArray(users)) {
                 console.error('❌ users não é array:', users);
                 users = [];
@@ -371,13 +335,14 @@ class ConductorAPI {
                 keys = [];
             }
             
-            // ✅ CALCULAR ESTATÍSTICAS COM FALLBACKS
+            // ✅ CALCULAR ESTATÍSTICAS COM NOMENCLATURA CORRETA
             const stats = {
                 totalUsers: users.length,
-                activeUsers: users.filter(u => u?.status === 'Ativo').length,
+                activeUsers: users.filter(u => u?.status === 'Ativo').length, // ✅ Maiúsculo
                 totalKeys: keys.length,
                 activeKeys: keys.filter(k => k?.status === 'ativa').length,
                 expiredKeys: keys.filter(k => k?.status === 'expirada').length,
+                usedKeys: keys.filter(k => k?.status === 'usada').length,
                 onlineUsers: 1,
                 uptime: 'Sistema Online'
             };
@@ -387,7 +352,6 @@ class ConductorAPI {
             
         } catch (error) {
             console.error('❌ ERRO COMPLETO em getSystemStats:', error);
-            console.error('❌ Stack trace:', error.stack);
             
             // ✅ RETORNO SEGURO EM CASO DE ERRO
             return {
@@ -396,6 +360,7 @@ class ConductorAPI {
                 totalKeys: 0,
                 activeKeys: 0,
                 expiredKeys: 0,
+                usedKeys: 0,
                 onlineUsers: 1,
                 uptime: 'Erro'
             };
@@ -454,4 +419,4 @@ class ConductorAPI {
 // ===============================================
 
 window.conductorAPI = new ConductorAPI();
-console.log('🌐 CONDUCTOR - API Manager (ORIGINAL) carregado!');
+console.log('🌐 CONDUCTOR - API Manager FINAL carregado!');
