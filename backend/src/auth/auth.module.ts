@@ -1,9 +1,9 @@
 // ===============================================
-// CONDUCTOR - AUTH MODULE ATUALIZADO
+// CONDUCTOR - AUTH MODULE CORRIGIDO
 // backend/src/auth/auth.module.ts
 // ===============================================
 
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 
@@ -14,7 +14,7 @@ import { JwtStrategy } from './jwt.strategy';
 
 // Módulos necessários
 import { UsersModule } from '../users/users.module';
-import { ChavesModule } from '../chaves/chaves.module';  // 🆕 IMPORTAR MÓDULO DE CHAVES
+import { ChavesModule } from '../chaves/chaves.module';
 
 @Module({
   imports: [
@@ -29,9 +29,9 @@ import { ChavesModule } from '../chaves/chaves.module';  // 🆕 IMPORTAR MÓDUL
       },
     }),
 
-    // 📋 DEPENDÊNCIAS DE OUTROS MÓDULOS
-    UsersModule,    // Para acessar UsersService
-    ChavesModule,   // 🆕 Para acessar ChavesService no registro
+    // 📋 DEPENDÊNCIAS DE OUTROS MÓDULOS COM forwardRef
+    forwardRef(() => UsersModule),    // Para acessar UsersService
+    forwardRef(() => ChavesModule),   // Para acessar ChavesService no registro
   ],
 
   controllers: [AuthController],

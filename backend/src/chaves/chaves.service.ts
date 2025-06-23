@@ -1,698 +1,348 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+// ===============================================
+// CONDUCTOR - CHAVES SERVICE CORRIGIDO 
+// backend/src/chaves/chaves.service.ts
+// ===============================================
+
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User, UserStatus, UserPermission, UserRole } from '../users/user.entity';
-import * as argon2 from 'argon2';
+import { Chave, ChaveTipo, ChaveStatus, ChavePermissao } from './chave.entity';
 
 @Injectable()
-export class UsersService {
+export class ChavesService {
   constructor(
-    @InjectRepository(User)
-    private usersRepository: Repository<User>,
+    @InjectRepository(Chave)
+    private chavesRepository: Repository<Chave>,
   ) {}
 
-  async findAll(): Promise<User[]> {
-    return this.usersRepository.find({
-      select: ['id', 'nome_usuario', 'funcao', 'permissao', 'email', 'celular', 'status', 'data_criacao', 'ultimo_login'],
-    });
-  }
-
-  async findByUsername(nome_usuario: string): Promise<User | null> {
-    return this.usersRepository.findOne({
-      where: { nome_usuario },
-    });
-  }
-
-  async findByEmail(email: string): Promise<User | null> {
-    return this.usersRepository.findOne({
-      where: { email },
-    });
-  }
-
-  async findById(id: number): Promise<User | null> {
-    return this.usersRepository.findOne({
-      where: { id },
-      select: ['id', 'nome_usuario', 'funcao', 'permissao', 'email', 'celular', 'status', 'data_criacao', 'ultimo_login'],
-    });
-  }
-
-  async getUserCount(): Promise<number> {
-    return this.usersRepository.count();
-  }
-
-  async create(userData: Partial<User>): Promise<User> {
-    // Verificar se usuário já existe
-    const existingUser = await this.findByUsername(userData.nome_usuario);
-    if (existingUser) {
-      throw new ConflictException('Nome de usuário já existe');
-    }
-
-    const existingEmail = await this.findByEmail(userData.email);
-    if (existingEmail) {
-      throw new ConflictException('Email já está em uso');
-    }
-
-    // Hash da senha
-    const hashedPassword = await argon2.hash(userData.senha);
-
-    const user = this.usersRepository.create({
-      ...userData,
-      senha: hashedPassword,
-    });
-
-    const savedUser = await this.usersRepository.save(user);
-    
-    // Retornar sem a senha
-    const { senha, ...result } = savedUser;
-    return result as User;
-  }
-
-  async updateLastLogin(userId: number): Promise<void> {
-    await this.usersRepository.update(userId, {
-      ultimo_login: new Date(),
-    });
-  }
-
-  async updateUser(id: number, updateData: Partial<User>): Promise<User> {
-    const user = await this.findById(id);
-    if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
-    }
-
-    // Se estiver atualizando a senha, fazer o hash
-    if (updateData.senha) {
-      updateData.senha = await argon2.hash(updateData.senha);
-    }
-
-    await this.usersRepository.update(id, updateData);
-    return this.findById(id);
-  }
-
-  async deactivateUser(id: number): Promise<void> {
-    const user = await this.findById(id);
-    if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
-    }
-
-    await this.usersRepository.update(id, {
-      status: UserStatus.INATIVO,
-    });
-  }
-
   // ===============================================
-  // 🆕 MÉTODOS ADICIONAIS PARA INTEGRAÇÃO COMPLETA
+  // MÉTODO CREATE CORRIGIDO
   // ===============================================
 
   /**
-   * Criar usuário (alias para create) - Para compatibilidade
+   * 🔧 Criar nova chave (VERSÃO CORRIGIDA)
    */
-  async createUser(userData: any): Promise<User> {
-    return this.create(userData);
-  }
-
-  /**
-   * Contar total de usuários (alias para getUserCount)
-   */
-  async count(): Promise<number> {
-    return this.getUserCount();
-  }
-
-  /**
-   * Buscar usuário por ID (alias para findById) - Para compatibilidade
-   */
-  async findOne(id: number): Promise<User> {
-    const user = await this.findById(id);
-    if (!user) {
-      throw new NotFoundException(`Usuário com ID ${id} não encontrado`);
-    }
-    return user;
-  }
-
-  /**
-   * Atualizar usuário (alias para updateUser) - Para compatibilidade
-   */
-  async update(id: number, updateData: Partial<User>): Promise<User> {
-    return this.updateUser(id, updateData);
-  }
-
-  /**
-   * Ativar usuário
-   */
-  async activateUser(id: number): Promise<void> {
-    const user = await this.findById(id);
-    if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
+  async create(createChaveDto: any): Promise<Chave> {
+    // Validações de negócio
+    if (!createChaveDto.chave || !createChaveDto.tipo || !createChaveDto.permissao) {
+      throw new BadRequestException('Campos obrigatórios: chave, tipo, permissao');
     }
 
-    await this.usersRepository.update(id, {
-      status: UserStatus.ATIVO,
+    // Verificar se chave já existe
+    const existing = await this.chavesRepository.findOne({
+      where: { chave: createChaveDto.chave }
     });
-  }
 
-  /**
-   * Alternar status do usuário (ativo/inativo)
-   */
-  async toggleUserStatus(id: number): Promise<User> {
-    const user = await this.findById(id);
-    if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
+    if (existing) {
+      throw new BadRequestException('Já existe uma chave com este código');
     }
 
-    const newStatus = user.status === UserStatus.ATIVO ? UserStatus.INATIVO : UserStatus.ATIVO;
+    // Validar data de expiração para chaves expiráveis
+    if (createChaveDto.tipo === ChaveTipo.EXPIRING) {
+      if (!createChaveDto.data_expiracao) {
+        throw new BadRequestException('Data de expiração é obrigatória para chaves expiráveis');
+      }
+
+      const expirationDate = new Date(createChaveDto.data_expiracao);
+      const now = new Date();
+
+      if (expirationDate <= now) {
+        throw new BadRequestException('Data de expiração deve ser no futuro');
+      }
+    }
+
+    // Definir usos máximos para chaves de uso único
+    if (createChaveDto.tipo === ChaveTipo.SINGLE_USE) {
+      createChaveDto.usos_maximo = 1;
+    }
+
+    // 🔧 SOLUÇÃO: Criar entidade diretamente e salvar
+    const novaChave = this.chavesRepository.create({
+      chave: createChaveDto.chave,
+      tipo: createChaveDto.tipo,
+      permissao: createChaveDto.permissao,
+      data_expiracao: createChaveDto.data_expiracao || null,
+      usos_maximo: createChaveDto.usos_maximo || null,
+      descricao: createChaveDto.descricao || null,
+      criado_por: createChaveDto.criado_por || null,
+      status: ChaveStatus.ATIVA,
+      usos_atual: 0
+    });
+
+    // 🔧 SALVAR A ENTIDADE (retorna Promise<Chave>)
+    const savedChave = await this.chavesRepository.save(novaChave);
     
-    await this.usersRepository.update(id, {
-      status: newStatus,
-    });
+    return savedChave;
+  }
 
-    return this.findById(id);
+  // ===============================================
+  // MÉTODOS AUXILIARES PARA VERIFICAÇÃO AUTOMÁTICA
+  // ===============================================
+
+  /**
+   * 🆕 Verificar e atualizar status automaticamente
+   */
+  async checkAndUpdateKeyStatus(chave: Chave): Promise<Chave> {
+    let updated = false;
+    const now = new Date();
+
+    // ⏰ VERIFICAR CHAVES EXPIRÁVEIS
+    if (chave.tipo === ChaveTipo.EXPIRING && 
+        chave.data_expiracao && 
+        chave.status === ChaveStatus.ATIVA) {
+      
+      if (now > chave.data_expiracao) {
+        chave.status = ChaveStatus.EXPIRADA;
+        updated = true;
+        console.log(`🔑 Chave expirada automaticamente: ${chave.chave}`);
+      }
+    }
+
+    // 1️⃣ VERIFICAR CHAVES DE USO ÚNICO
+    if (chave.tipo === ChaveTipo.SINGLE_USE && 
+        chave.status === ChaveStatus.ATIVA && 
+        chave.usos_atual > 0) {
+      
+      chave.status = ChaveStatus.USADA;
+      updated = true;
+      console.log(`🔑 Chave de uso único marcada como usada: ${chave.chave}`);
+    }
+
+    // 📊 VERIFICAR LIMITE DE USOS
+    if (chave.usos_maximo && 
+        chave.usos_atual >= chave.usos_maximo && 
+        chave.status === ChaveStatus.ATIVA) {
+      
+      chave.status = ChaveStatus.USADA;
+      updated = true;
+      console.log(`🔑 Chave com limite de usos atingido: ${chave.chave}`);
+    }
+
+    // 💾 SALVAR SE HOUVE MUDANÇAS
+    if (updated) {
+      await this.chavesRepository.save(chave);
+    }
+
+    return chave;
   }
 
   /**
-   * 🔧 Buscar usuários por permissão (CORRIGIDO COM ENUM)
+   * 🆕 Validar e usar chave (incrementa contador + verifica status)
    */
-  async findByPermission(permissao: UserPermission): Promise<User[]> {
-    return this.usersRepository.find({
-      where: { permissao },
-      select: ['id', 'nome_usuario', 'funcao', 'permissao', 'email', 'celular', 'status', 'data_criacao', 'ultimo_login'],
-    });
-  }
-
-  /**
-   * 🆕 Versão de findByPermission que aceita string
-   */
-  async findByPermissionString(permissao: string): Promise<User[]> {
-    const permissionEnum = this.stringToUserPermission(permissao);
-    return this.findByPermission(permissionEnum);
-  }
-
-  /**
-   * 🔧 Buscar usuários por função (NOVO)
-   */
-  async findByRole(funcao: UserRole): Promise<User[]> {
-    return this.usersRepository.find({
-      where: { funcao },
-      select: ['id', 'nome_usuario', 'funcao', 'permissao', 'email', 'celular', 'status', 'data_criacao', 'ultimo_login'],
-    });
-  }
-
-  /**
-   * 🆕 Versão de findByRole que aceita string
-   */
-  async findByRoleString(funcao: string): Promise<User[]> {
-    const roleEnum = this.stringToUserRole(funcao);
-    return this.findByRole(roleEnum);
-  }
-
-  /**
-   * Buscar usuários por status
-   */
-  async findByStatus(status: UserStatus): Promise<User[]> {
-    return this.usersRepository.find({
-      where: { status },
-      select: ['id', 'nome_usuario', 'funcao', 'permissao', 'email', 'celular', 'status', 'data_criacao', 'ultimo_login'],
-    });
-  }
-
-  /**
-   * Buscar usuários ativos
-   */
-  async findActiveUsers(): Promise<User[]> {
-    return this.findByStatus(UserStatus.ATIVO);
-  }
-
-  /**
-   * Buscar usuários inativos
-   */
-  async findInactiveUsers(): Promise<User[]> {
-    return this.findByStatus(UserStatus.INATIVO);
-  }
-
-  /**
-   * Contar usuários por status
-   */
-  async countByStatus(): Promise<{ ativos: number; inativos: number }> {
-    const [ativos, inativos] = await Promise.all([
-      this.usersRepository.count({ where: { status: UserStatus.ATIVO } }),
-      this.usersRepository.count({ where: { status: UserStatus.INATIVO } })
-    ]);
-
-    return { ativos, inativos };
-  }
-
-  /**
-   * 🔧 Contar usuários por permissão (CORRIGIDO COM ENUM)
-   */
-  async countByPermission(): Promise<Record<string, number>> {
-    const permissions = [
-      UserPermission.VISITANTE,
-      UserPermission.USUARIO,
-      UserPermission.OPERADOR,
-      UserPermission.ADMINISTRADOR,
-      UserPermission.DESENVOLVEDOR
-    ];
-    
-    const counts: Record<string, number> = {};
-
-    for (const permission of permissions) {
-      counts[permission] = await this.usersRepository.count({
-        where: { permissao: permission }
+  async validateAndUseKey(chaveCode: string): Promise<{ isValid: boolean; permission?: string; message?: string }> {
+    try {
+      const chave = await this.chavesRepository.findOne({
+        where: { chave: chaveCode }
       });
-    }
 
-    return counts;
+      if (!chave) {
+        return { 
+          isValid: false, 
+          message: 'Chave de acesso não encontrada' 
+        };
+      }
+
+      // 🕒 VERIFICAR E ATUALIZAR STATUS ANTES DE VALIDAR
+      const updatedChave = await this.checkAndUpdateKeyStatus(chave);
+
+      // 🚫 VERIFICAR SE A CHAVE ESTÁ ATIVA
+      if (updatedChave.status !== ChaveStatus.ATIVA) {
+        let message = 'Chave de acesso inválida';
+        
+        switch (updatedChave.status) {
+          case ChaveStatus.EXPIRADA:
+            message = 'Esta chave de acesso expirou';
+            break;
+          case ChaveStatus.USADA:
+            message = 'Esta chave de acesso já foi utilizada';
+            break;
+          case ChaveStatus.INATIVA:
+            message = 'Esta chave de acesso foi desativada';
+            break;
+        }
+
+        return { 
+          isValid: false, 
+          message 
+        };
+      }
+
+      // ✅ CHAVE VÁLIDA - INCREMENTAR USO
+      updatedChave.usos_atual += 1;
+      await this.chavesRepository.save(updatedChave);
+
+      // 🔄 VERIFICAR NOVAMENTE APÓS INCREMENTAR (para chaves de uso único)
+      await this.checkAndUpdateKeyStatus(updatedChave);
+
+      return {
+        isValid: true,
+        permission: updatedChave.permissao,
+        message: 'Chave de acesso válida'
+      };
+
+    } catch (error) {
+      console.error('Erro ao validar chave:', error);
+      return { 
+        isValid: false, 
+        message: 'Erro interno ao validar chave' 
+      };
+    }
   }
 
-  /**
-   * 🆕 Contar usuários por função
-   */
-  async countByRole(): Promise<Record<string, number>> {
-    const roles = [
-      UserRole.ESTAGIARIO,
-      UserRole.GESTOR,
-      UserRole.ANALISTA,
-      UserRole.COORDENADOR,
-      UserRole.DIRETOR
-    ];
-    
-    const counts: Record<string, number> = {};
-
-    for (const role of roles) {
-      counts[this.userRoleToString(role)] = await this.usersRepository.count({
-        where: { funcao: role }
-      });
-    }
-
-    return counts;
-  }
+  // ===============================================
+  // MÉTODOS CRUD BÁSICOS (seguindo padrão do projeto)
+  // ===============================================
 
   /**
-   * 🔧 Alterar permissão do usuário (CORRIGIDO COM ENUM)
+   * Listar todas as chaves com verificação automática
    */
-  async changePermission(id: number, novaPermissao: UserPermission): Promise<User> {
-    const user = await this.findById(id);
-    if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
-    }
-
-    const permissoesValidas = [
-      UserPermission.VISITANTE,
-      UserPermission.USUARIO,
-      UserPermission.OPERADOR,
-      UserPermission.ADMINISTRADOR,
-      UserPermission.DESENVOLVEDOR
-    ];
-    
-    if (!permissoesValidas.includes(novaPermissao)) {
-      throw new Error('Permissão inválida');
-    }
-
-    await this.usersRepository.update(id, {
-      permissao: novaPermissao,
+  async findAll(): Promise<Chave[]> {
+    const chaves = await this.chavesRepository.find({
+      order: { data_criacao: 'DESC' }
     });
 
+    // 🕒 VERIFICAR STATUS DE TODAS AS CHAVES
+    const updatedChaves = [];
+    for (const chave of chaves) {
+      const updatedChave = await this.checkAndUpdateKeyStatus(chave);
+      updatedChaves.push(updatedChave);
+    }
+
+    return updatedChaves;
+  }
+
+  /**
+   * Buscar chave por ID com verificação de status
+   */
+  async findById(id: number): Promise<Chave> {
+    const chave = await this.chavesRepository.findOne({ where: { id } });
+    if (!chave) {
+      throw new NotFoundException(`Chave com ID ${id} não encontrada`);
+    }
+    
+    // 🕒 VERIFICAR STATUS ANTES DE RETORNAR
+    return await this.checkAndUpdateKeyStatus(chave);
+  }
+
+  /**
+   * Atualizar chave com validações
+   */
+  async update(id: number, updateData: Partial<Chave>): Promise<Chave> {
+    const chave = await this.findById(id);
+    
+    // 🔒 VALIDAÇÕES DE NEGÓCIO
+    if (updateData.status === ChaveStatus.ATIVA) {
+      // Não permitir reativar chaves expiradas
+      if (chave.tipo === ChaveTipo.EXPIRING && chave.data_expiracao) {
+        const now = new Date();
+        if (now > chave.data_expiracao) {
+          throw new BadRequestException('Não é possível reativar uma chave expirada');
+        }
+      }
+      
+      // Não permitir reativar chaves de uso único já usadas
+      if (chave.tipo === ChaveTipo.SINGLE_USE && chave.usos_atual > 0) {
+        throw new BadRequestException('Não é possível reativar uma chave de uso único já utilizada');
+      }
+    }
+
+    // Validar mudança de data de expiração
+    if (updateData.data_expiracao && chave.tipo === ChaveTipo.EXPIRING) {
+      const newExpirationDate = new Date(updateData.data_expiracao);
+      const now = new Date();
+
+      if (newExpirationDate <= now) {
+        throw new BadRequestException('Nova data de expiração deve ser no futuro');
+      }
+    }
+
+    // 🔧 ATUALIZAR NO PADRÃO DO PROJETO
+    await this.chavesRepository.update(id, updateData);
     return this.findById(id);
   }
 
   /**
-   * 🆕 Versão de changePermission que aceita string
+   * Desativar chave
    */
-  async changePermissionByString(id: number, novaPermissao: string): Promise<User> {
-    const permissionEnum = this.stringToUserPermission(novaPermissao);
-    return this.changePermission(id, permissionEnum);
-  }
-
-  /**
-   * 🆕 Alterar função do usuário
-   */
-  async changeRole(id: number, novaFuncao: UserRole): Promise<User> {
-    const user = await this.findById(id);
-    if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
-    }
-
-    const funcoesValidas = [
-      UserRole.ESTAGIARIO,
-      UserRole.GESTOR,
-      UserRole.ANALISTA,
-      UserRole.COORDENADOR,
-      UserRole.DIRETOR
-    ];
-    
-    if (!funcoesValidas.includes(novaFuncao)) {
-      throw new Error('Função inválida');
-    }
-
-    await this.usersRepository.update(id, {
-      funcao: novaFuncao,
+  async deactivate(id: number): Promise<void> {
+    await this.chavesRepository.update(id, {
+      status: ChaveStatus.INATIVA,
     });
-
-    return this.findById(id);
   }
 
   /**
-   * 🆕 Versão de changeRole que aceita string
-   */
-  async changeRoleByString(id: number, novaFuncao: string): Promise<User> {
-    const roleEnum = this.stringToUserRole(novaFuncao);
-    return this.changeRole(id, roleEnum);
-  }
-
-  /**
-   * Verificar se usuário tem permissão específica
-   */
-  async hasPermission(userId: number, requiredPermission: string): Promise<boolean> {
-    const user = await this.findById(userId);
-    if (!user) {
-      return false;
-    }
-
-    const permissions = [
-      UserPermission.VISITANTE,
-      UserPermission.USUARIO,
-      UserPermission.OPERADOR,
-      UserPermission.ADMINISTRADOR,
-      UserPermission.DESENVOLVEDOR
-    ];
-    
-    const userLevel = permissions.indexOf(user.permissao);
-    const requiredLevel = permissions.indexOf(this.stringToUserPermission(requiredPermission));
-
-    return userLevel >= requiredLevel;
-  }
-
-  /**
-   * Verificar se é primeiro usuário do sistema
-   */
-  async isFirstUser(): Promise<boolean> {
-    const count = await this.getUserCount();
-    return count === 0;
-  }
-
-  /**
-   * 🔧 Obter estatísticas gerais dos usuários (ATUALIZADO)
-   */
-  async getStatistics(): Promise<any> {
-    const [total, byStatus, byPermission, byRole] = await Promise.all([
-      this.getUserCount(),
-      this.countByStatus(),
-      this.countByPermission(),
-      this.countByRole()
-    ]);
-
-    return {
-      total,
-      ativos: byStatus.ativos,
-      inativos: byStatus.inativos,
-      porPermissao: byPermission,
-      porFuncao: byRole,
-      percentualAtivos: total > 0 ? ((byStatus.ativos / total) * 100).toFixed(1) : 0
-    };
-  }
-
-  /**
-   * Buscar usuários com login recente (últimos X dias)
-   */
-  async findRecentlyActive(days: number = 30): Promise<User[]> {
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - days);
-
-    return this.usersRepository
-      .createQueryBuilder('user')
-      .where('user.ultimo_login >= :cutoffDate', { cutoffDate })
-      .select(['user.id', 'user.nome_usuario', 'user.funcao', 'user.permissao', 'user.email', 'user.ultimo_login'])
-      .getMany();
-  }
-
-  /**
-   * 🔧 Remover usuário permanentemente (CORRIGIDO COM ENUM)
+   * Excluir chave permanentemente
    */
   async remove(id: number): Promise<void> {
-    const user = await this.findById(id);
-    if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
+    const chave = await this.findById(id);
+    
+    // 🔒 APENAS PERMITIR EXCLUSÃO DE CHAVES USADAS OU EXPIRADAS
+    if (chave.status === ChaveStatus.ATIVA) {
+      throw new BadRequestException('Não é possível excluir uma chave ainda ativa. Desative-a primeiro.');
     }
 
-    // Não permitir remover o último desenvolvedor
-    if (user.permissao === UserPermission.DESENVOLVEDOR) {
-      const devCount = await this.usersRepository.count({
-        where: { 
-          permissao: UserPermission.DESENVOLVEDOR, 
-          status: UserStatus.ATIVO 
+    await this.chavesRepository.remove(chave);
+  }
+
+  // ===============================================
+  // MÉTODOS UTILITÁRIOS
+  // ===============================================
+
+  /**
+   * 🆕 Estatísticas detalhadas das chaves
+   */
+  async getStatistics(): Promise<any> {
+    const chaves = await this.findAll(); // Já aplica verificação automática
+
+    const stats = {
+      total: chaves.length,
+      ativas: chaves.filter(c => c.status === ChaveStatus.ATIVA).length,
+      expiradas: chaves.filter(c => c.status === ChaveStatus.EXPIRADA).length,
+      usadas: chaves.filter(c => c.status === ChaveStatus.USADA).length,
+      inativas: chaves.filter(c => c.status === ChaveStatus.INATIVA).length,
+      tipos: {
+        permanent: chaves.filter(c => c.tipo === ChaveTipo.PERMANENT).length,
+        expiring: chaves.filter(c => c.tipo === ChaveTipo.EXPIRING).length,
+        single_use: chaves.filter(c => c.tipo === ChaveTipo.SINGLE_USE).length,
+      },
+      expirandoEm24h: chaves.filter(c => {
+        if (c.tipo !== ChaveTipo.EXPIRING || !c.data_expiracao || c.status !== ChaveStatus.ATIVA) {
+          return false;
         }
-      });
-
-      if (devCount <= 1) {
-        throw new Error('Não é possível remover o último desenvolvedor do sistema');
-      }
-    }
-
-    await this.usersRepository.remove(user);
-  }
-
-  /**
-   * Validar senha do usuário
-   */
-  async validatePassword(userId: number, password: string): Promise<boolean> {
-    const user = await this.usersRepository.findOne({
-      where: { id: userId },
-      select: ['senha']
-    });
-
-    if (!user) {
-      return false;
-    }
-
-    return argon2.verify(user.senha, password);
-  }
-
-  /**
-   * Alterar senha do usuário
-   */
-  async changePassword(userId: number, newPassword: string): Promise<void> {
-    const hashedPassword = await argon2.hash(newPassword);
-    
-    await this.usersRepository.update(userId, {
-      senha: hashedPassword
-    });
-  }
-
-  // ===============================================
-  // 🔧 FUNÇÕES AUXILIARES PARA CONVERSÃO DE TIPOS
-  // ===============================================
-
-  /**
-   * 🔧 Converter string para UserPermission enum
-   */
-  private stringToUserPermission(permission: string): UserPermission {
-    switch (permission) {
-      case 'Visitante':
-        return UserPermission.VISITANTE;
-      case 'Usuario':
-        return UserPermission.USUARIO;
-      case 'Operador':
-        return UserPermission.OPERADOR;
-      case 'Administrador':
-        return UserPermission.ADMINISTRADOR;
-      case 'Desenvolvedor':
-        return UserPermission.DESENVOLVEDOR;
-      default:
-        return UserPermission.VISITANTE;
-    }
-  }
-
-  /**
-   * 🔧 Converter string para UserRole enum (ATUALIZADO COM FUNÇÕES CORRETAS)
-   */
-  private stringToUserRole(role: string): UserRole {
-    const roleNormalized = role.trim();
-    
-    switch (roleNormalized) {
-      case 'Estagiario':
-      case 'Estagiário':
-      case 'Intern':
-        return UserRole.ESTAGIARIO;
-      case 'Gestor':
-      case 'Manager':
-        return UserRole.GESTOR;
-      case 'Analista':
-      case 'Analyst':
-        return UserRole.ANALISTA;
-      case 'Coordenador':
-      case 'Coordinator':
-        return UserRole.COORDENADOR;
-      case 'Diretor':
-      case 'Director':
-        return UserRole.DIRETOR;
-      default:
-        return UserRole.ESTAGIARIO; // Padrão para estagiário
-    }
-  }
-
-  /**
-   * 🆕 Converter UserPermission enum para string
-   */
-  public userPermissionToString(permission: UserPermission): string {
-    switch (permission) {
-      case UserPermission.VISITANTE:
-        return 'Visitante';
-      case UserPermission.USUARIO:
-        return 'Usuario';
-      case UserPermission.OPERADOR:
-        return 'Operador';
-      case UserPermission.ADMINISTRADOR:
-        return 'Administrador';
-      case UserPermission.DESENVOLVEDOR:
-        return 'Desenvolvedor';
-      default:
-        return 'Visitante';
-    }
-  }
-
-  /**
-   * 🔧 Converter UserRole enum para string (ATUALIZADO COM FUNÇÕES CORRETAS)
-   */
-  public userRoleToString(role: UserRole): string {
-    switch (role) {
-      case UserRole.ESTAGIARIO:
-        return 'Estagiario';
-      case UserRole.GESTOR:
-        return 'Gestor';
-      case UserRole.ANALISTA:
-        return 'Analista';
-      case UserRole.COORDENADOR:
-        return 'Coordenador';
-      case UserRole.DIRETOR:
-        return 'Diretor';
-      default:
-        return 'Estagiario';
-    }
-  }
-
-  // ===============================================
-  // 🆕 MÉTODOS AUXILIARES PARA FUNÇÕES
-  // ===============================================
-
-  /**
-   * 🆕 Listar funções disponíveis
-   */
-  public getAvailableRoles(): string[] {
-    return ['Estagiario', 'Gestor', 'Analista', 'Coordenador', 'Diretor'];
-  }
-
-  /**
-   * 🆕 Validar se função é válida
-   */
-  public isValidRole(role: string): boolean {
-    return this.getAvailableRoles().includes(role);
-  }
-
-  /**
-   * 🆕 Listar permissões disponíveis
-   */
-  public getAvailablePermissions(): string[] {
-    return ['Visitante', 'Usuario', 'Operador', 'Administrador', 'Desenvolvedor'];
-  }
-
-  /**
-   * 🆕 Validar se permissão é válida
-   */
-  public isValidPermission(permission: string): boolean {
-    return this.getAvailablePermissions().includes(permission);
-  }
-
-  /**
-   * 🆕 Obter usuários por função hierárquica
-   */
-  async getUsersByHierarchy(): Promise<Record<string, User[]>> {
-    const users = await this.findAll();
-    
-    return {
-      'Diretor': users.filter(u => u.funcao === UserRole.DIRETOR),
-      'Coordenador': users.filter(u => u.funcao === UserRole.COORDENADOR),
-      'Gestor': users.filter(u => u.funcao === UserRole.GESTOR),
-      'Analista': users.filter(u => u.funcao === UserRole.ANALISTA),
-      'Estagiario': users.filter(u => u.funcao === UserRole.ESTAGIARIO)
+        const now = new Date();
+        const expiration = new Date(c.data_expiracao);
+        const diff = expiration.getTime() - now.getTime();
+        const hours = diff / (1000 * 60 * 60);
+        return hours > 0 && hours <= 24;
+      }).length
     };
+
+    return stats;
   }
 
   /**
-   * 🆕 Obter usuários por nível de permissão
+   * Buscar chave por código
    */
-  async getUsersByPermissionLevel(): Promise<Record<string, User[]>> {
-    const users = await this.findAll();
-    
-    return {
-      'Desenvolvedor': users.filter(u => u.permissao === UserPermission.DESENVOLVEDOR),
-      'Administrador': users.filter(u => u.permissao === UserPermission.ADMINISTRADOR),
-      'Operador': users.filter(u => u.permissao === UserPermission.OPERADOR),
-      'Usuario': users.filter(u => u.permissao === UserPermission.USUARIO),
-      'Visitante': users.filter(u => u.permissao === UserPermission.VISITANTE)
-    };
-  }
-
-  /**
-   * 🆕 Buscar usuários de liderança (Diretores, Coordenadores, Gestores)
-   */
-  async getLeadershipUsers(): Promise<User[]> {
-    return this.usersRepository.find({
-      where: [
-        { funcao: UserRole.DIRETOR },
-        { funcao: UserRole.COORDENADOR },
-        { funcao: UserRole.GESTOR }
-      ],
-      select: ['id', 'nome_usuario', 'funcao', 'permissao', 'email', 'celular', 'status', 'data_criacao', 'ultimo_login'],
-      order: {
-        funcao: 'ASC',
-        nome_usuario: 'ASC'
-      }
+  async findByCode(chaveCode: string): Promise<Chave | null> {
+    const chave = await this.chavesRepository.findOne({ 
+      where: { chave: chaveCode } 
     });
-  }
-
-  /**
-   * 🆕 Verificar se usuário tem função de liderança
-   */
-  async isLeadershipRole(userId: number): Promise<boolean> {
-    const user = await this.findById(userId);
-    if (!user) {
-      return false;
+    
+    if (!chave) {
+      return null;
     }
 
-    return [UserRole.DIRETOR, UserRole.COORDENADOR, UserRole.GESTOR].includes(user.funcao);
+    // 🕒 VERIFICAR STATUS ANTES DE RETORNAR
+    return await this.checkAndUpdateKeyStatus(chave);
   }
 
   /**
-   * 🆕 Obter relatório completo de usuários
+   * Verificar se chave existe
    */
-  async getDetailedReport(): Promise<any> {
-    const [
-      statistics,
-      byHierarchy,
-      byPermission,
-      recentlyActive,
-      leadership
-    ] = await Promise.all([
-      this.getStatistics(),
-      this.getUsersByHierarchy(),
-      this.getUsersByPermissionLevel(),
-      this.findRecentlyActive(7), // Últimos 7 dias
-      this.getLeadershipUsers()
-    ]);
-
-    return {
-      timestamp: new Date().toISOString(),
-      overview: statistics,
-      distribution: {
-        porFuncao: byHierarchy,
-        porPermissao: byPermission
-      },
-      activity: {
-        recentlyActive: recentlyActive.length,
-        activeInLastWeek: recentlyActive
-      },
-      leadership: {
-        total: leadership.length,
-        users: leadership
-      }
-    };
+  async exists(chaveCode: string): Promise<boolean> {
+    const count = await this.chavesRepository.count({
+      where: { chave: chaveCode }
+    });
+    return count > 0;
   }
 }
