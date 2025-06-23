@@ -1,0 +1,580 @@
+
+/* CSS base que substitui TODOS os outros arquivos CSS */
+
+/* ===============================================
+   VARIÁVEIS BOOTSTRAP OVERRIDE
+   =============================================== */
+
+:root {
+    /* Cores principais Conductor */
+    --bs-warning: #FFD700;
+    --bs-warning-rgb: 255, 215, 0;
+    --bs-dark: #000000;
+    --bs-dark-rgb: 0, 0, 0;
+    --bs-secondary: #333333;
+    --bs-secondary-rgb: 51, 51, 51;
+    --bs-success: #00ff88;
+    --bs-success-rgb: 0, 255, 136;
+    --bs-danger: #ff4444;
+    --bs-danger-rgb: 255, 68, 68;
+    --bs-info: #3498db;
+    --bs-info-rgb: 52, 152, 219;
+    
+    /* Cores customizadas Conductor */
+    --conductor-yellow: #FFD700;
+    --conductor-electric: #FFC107;
+    --conductor-black: #000000;
+    --conductor-dark: #1a1a1a;
+    --conductor-medium: #333333;
+    --conductor-light: #666666;
+    --conductor-lighter: #999999;
+    
+    /* Efeitos visuais */
+    --conductor-glow: 0 0 20px rgba(255, 215, 0, 0.3);
+    --conductor-glow-strong: 0 0 30px rgba(255, 215, 0, 0.6);
+    --conductor-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    
+    /* Transições */
+    --conductor-transition: all 0.3s ease;
+}
+
+/* ===============================================
+   BODY E LAYOUT GLOBAL
+   =============================================== */
+
+body {
+    background: var(--conductor-black) !important;
+    color: white !important;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+    line-height: 1.6;
+}
+
+/* Override Bootstrap backgrounds */
+.bg-dark {
+    background: var(--conductor-black) !important;
+}
+
+.bg-secondary {
+    background: var(--conductor-medium) !important;
+}
+
+.bg-conductor-dark {
+    background: var(--conductor-dark) !important;
+}
+
+.bg-conductor-medium {
+    background: var(--conductor-medium) !important;
+}
+
+.bg-conductor-card {
+    background: var(--conductor-dark) !important;
+    border: 1px solid var(--conductor-medium) !important;
+}
+
+/* ===============================================
+   TIPOGRAFIA E CORES
+   =============================================== */
+
+.text-conductor-yellow {
+    color: var(--conductor-yellow) !important;
+}
+
+.text-conductor-light {
+    color: var(--conductor-lighter) !important;
+}
+
+/* Gradient text effect */
+.text-gradient-yellow {
+    background: linear-gradient(135deg, var(--conductor-yellow), var(--conductor-electric));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.3));
+}
+
+/* ===============================================
+   BOTÕES CUSTOMIZADOS
+   =============================================== */
+
+.btn-warning {
+    background: var(--conductor-yellow) !important;
+    border-color: var(--conductor-yellow) !important;
+    color: var(--conductor-black) !important;
+    font-weight: 600;
+    transition: var(--conductor-transition);
+}
+
+.btn-warning:hover,
+.btn-warning:focus {
+    background: var(--conductor-electric) !important;
+    border-color: var(--conductor-electric) !important;
+    color: var(--conductor-black) !important;
+    box-shadow: var(--conductor-glow) !important;
+    transform: translateY(-2px);
+}
+
+.btn-outline-warning {
+    border-color: var(--conductor-yellow) !important;
+    color: var(--conductor-yellow) !important;
+    background: transparent !important;
+}
+
+.btn-outline-warning:hover,
+.btn-outline-warning:focus {
+    background: var(--conductor-yellow) !important;
+    border-color: var(--conductor-yellow) !important;
+    color: var(--conductor-black) !important;
+    box-shadow: var(--conductor-glow) !important;
+}
+
+.btn-conductor {
+    background: var(--conductor-yellow);
+    border: 1px solid var(--conductor-yellow);
+    color: var(--conductor-black);
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 6px;
+    transition: var(--conductor-transition);
+}
+
+.btn-conductor:hover {
+    background: var(--conductor-electric);
+    box-shadow: var(--conductor-glow);
+    transform: translateY(-2px);
+    color: var(--conductor-black);
+}
+
+/* ===============================================
+   FORMS E INPUTS
+   =============================================== */
+
+.form-control,
+.form-select {
+    background: var(--conductor-black) !important;
+    border: 1px solid var(--conductor-medium) !important;
+    color: white !important;
+    transition: var(--conductor-transition);
+}
+
+.form-control:focus,
+.form-select:focus {
+    background: var(--conductor-black) !important;
+    border-color: var(--conductor-yellow) !important;
+    color: white !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 215, 0, 0.25) !important;
+}
+
+.form-control::placeholder {
+    color: var(--conductor-lighter) !important;
+    opacity: 0.7;
+}
+
+.form-label {
+    color: var(--conductor-lighter) !important;
+    font-weight: 500;
+}
+
+/* ===============================================
+   CARDS E COMPONENTES
+   =============================================== */
+
+.card {
+    background: var(--conductor-dark) !important;
+    border: 1px solid var(--conductor-medium) !important;
+    transition: var(--conductor-transition);
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--conductor-shadow);
+    border-color: var(--conductor-yellow) !important;
+}
+
+.card-header {
+    background: var(--conductor-medium) !important;
+    border-bottom: 1px solid var(--conductor-light) !important;
+    color: white !important;
+}
+
+.card-body {
+    color: white !important;
+}
+
+/* ===============================================
+   NAVIGATION E NAVBAR
+   =============================================== */
+
+.navbar-dark {
+    background: var(--conductor-dark) !important;
+    border-bottom: 2px solid var(--conductor-yellow) !important;
+    box-shadow: var(--conductor-shadow);
+}
+
+.navbar-brand {
+    color: var(--conductor-yellow) !important;
+    font-weight: 700;
+}
+
+.navbar-nav .nav-link {
+    color: var(--conductor-lighter) !important;
+    transition: var(--conductor-transition);
+}
+
+.navbar-nav .nav-link:hover {
+    color: var(--conductor-yellow) !important;
+}
+
+/* Nav Pills para tabs */
+.nav-pills .nav-link {
+    background: transparent !important;
+    border: 1px solid var(--conductor-medium) !important;
+    color: var(--conductor-lighter) !important;
+    margin: 0 2px;
+    transition: var(--conductor-transition);
+}
+
+.nav-pills .nav-link:hover {
+    background: rgba(255, 215, 0, 0.1) !important;
+    border-color: var(--conductor-yellow) !important;
+    color: var(--conductor-yellow) !important;
+}
+
+.nav-pills .nav-link.active {
+    background: var(--conductor-yellow) !important;
+    color: var(--conductor-black) !important;
+    border-color: var(--conductor-yellow) !important;
+    box-shadow: var(--conductor-glow) !important;
+}
+
+/* ===============================================
+   TABELAS
+   =============================================== */
+
+.table-dark {
+    --bs-table-bg: var(--conductor-dark);
+    --bs-table-striped-bg: rgba(255, 255, 255, 0.05);
+    --bs-table-hover-bg: rgba(255, 215, 0, 0.05);
+    --bs-table-border-color: var(--conductor-medium);
+}
+
+.table-warning {
+    --bs-table-bg: var(--conductor-yellow);
+    --bs-table-color: var(--conductor-black);
+}
+
+thead.table-warning th {
+    background: var(--conductor-yellow) !important;
+    color: var(--conductor-black) !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.85rem;
+}
+
+/* ===============================================
+   BADGES E STATUS
+   =============================================== */
+
+.badge {
+    font-size: 0.75rem;
+    padding: 0.35em 0.65em;
+    font-weight: 600;
+}
+
+.badge-permission-visitante {
+    background: linear-gradient(135deg, #666, #888) !important;
+    color: white !important;
+}
+
+.badge-permission-usuario {
+    background: linear-gradient(135deg, #3498db, #5dade2) !important;
+    color: white !important;
+}
+
+.badge-permission-operador {
+    background: linear-gradient(135deg, #2ecc71, #58d68d) !important;
+    color: white !important;
+}
+
+.badge-permission-administrador {
+    background: linear-gradient(135deg, #f39c12, #f5b041) !important;
+    color: white !important;
+}
+
+.badge-permission-desenvolvedor {
+    background: linear-gradient(135deg, #9b59b6, #bb8fce) !important;
+    color: white !important;
+}
+
+.badge-status-ativo {
+    background: var(--bs-success) !important;
+    color: white !important;
+}
+
+.badge-status-inativo {
+    background: var(--bs-danger) !important;
+    color: white !important;
+}
+
+/* ===============================================
+   MODALS
+   =============================================== */
+
+.modal-content {
+    background: var(--conductor-dark) !important;
+    border: 2px solid var(--conductor-yellow) !important;
+    box-shadow: var(--conductor-shadow);
+}
+
+.modal-header {
+    background: var(--conductor-medium) !important;
+    border-bottom: 1px solid var(--conductor-light) !important;
+    color: white !important;
+}
+
+.modal-title {
+    color: var(--conductor-yellow) !important;
+    font-weight: 600;
+}
+
+.modal-footer {
+    background: var(--conductor-medium) !important;
+    border-top: 1px solid var(--conductor-light) !important;
+}
+
+.btn-close-white {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* ===============================================
+   TOASTS E ALERTAS
+   =============================================== */
+
+.toast {
+    background: var(--conductor-dark) !important;
+    border: 1px solid var(--conductor-medium) !important;
+    color: white !important;
+}
+
+.toast-header {
+    background: var(--conductor-medium) !important;
+    color: white !important;
+}
+
+.alert-success {
+    background: rgba(0, 255, 136, 0.1) !important;
+    border-color: var(--bs-success) !important;
+    color: var(--bs-success) !important;
+}
+
+.alert-danger {
+    background: rgba(255, 68, 68, 0.1) !important;
+    border-color: var(--bs-danger) !important;
+    color: var(--bs-danger) !important;
+}
+
+.alert-warning {
+    background: rgba(255, 215, 0, 0.1) !important;
+    border-color: var(--conductor-yellow) !important;
+    color: var(--conductor-yellow) !important;
+}
+
+.alert-info {
+    background: rgba(52, 152, 219, 0.1) !important;
+    border-color: var(--bs-info) !important;
+    color: var(--bs-info) !important;
+}
+
+/* ===============================================
+   UTILITÁRIOS CUSTOMIZADOS
+   =============================================== */
+
+.glow-hover:hover {
+    box-shadow: var(--conductor-glow) !important;
+    transition: var(--conductor-transition);
+}
+
+.conductor-border {
+    border: 1px solid var(--conductor-yellow) !important;
+}
+
+.conductor-border-bottom {
+    border-bottom: 2px solid var(--conductor-yellow) !important;
+}
+
+.loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid var(--conductor-medium);
+    border-radius: 50%;
+    border-top-color: var(--conductor-yellow);
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ===============================================
+   EFEITOS ESPECIAIS
+   =============================================== */
+
+.logo-glow {
+    background: linear-gradient(135deg, var(--conductor-yellow), var(--conductor-electric));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.5));
+    animation: pulse-glow 3s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+    0%, 100% { filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.5)); }
+    50% { filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.8)); }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===============================================
+   RESPONSIVIDADE
+   =============================================== */
+
+@media (max-width: 768px) {
+    .card {
+        margin-bottom: 1rem;
+    }
+    
+    .btn {
+        font-size: 0.875rem;
+        padding: 0.5rem 1rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+}
+
+/* ===============================================
+   LOGIN PAGE ESPECÍFICO
+   =============================================== */
+
+.login-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--conductor-black) 0%, var(--conductor-dark) 100%);
+}
+
+.login-card {
+    background: var(--conductor-dark) !important;
+    border: 2px solid var(--conductor-yellow) !important;
+    box-shadow: var(--conductor-glow-strong) !important;
+    backdrop-filter: blur(10px);
+}
+
+.tab-button {
+    background: transparent !important;
+    border: 1px solid var(--conductor-medium) !important;
+    color: var(--conductor-lighter) !important;
+    transition: var(--conductor-transition);
+}
+
+.tab-button.active {
+    background: var(--conductor-yellow) !important;
+    color: var(--conductor-black) !important;
+    border-color: var(--conductor-yellow) !important;
+}
+
+/* ===============================================
+   DASHBOARD ESPECÍFICO
+   =============================================== */
+
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--bs-success);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.menu-card {
+    background: var(--conductor-dark) !important;
+    border: 1px solid var(--conductor-medium) !important;
+    transition: var(--conductor-transition);
+    cursor: pointer;
+}
+
+.menu-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--conductor-yellow) !important;
+    box-shadow: var(--conductor-glow) !important;
+}
+
+.menu-card .card-icon {
+    font-size: 3rem;
+    background: linear-gradient(135deg, var(--conductor-yellow), var(--conductor-electric));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ===============================================
+   PRINT STYLES
+   =============================================== */
+
+@media print {
+    .navbar,
+    .btn,
+    .modal,
+    .toast-container {
+        display: none !important;
+    }
+    
+    body {
+        background: white !important;
+        color: black !important;
+    }
+    
+    .card {
+        border: 1px solid #ccc !important;
+        background: white !important;
+    }
+}
+
+/* ===============================================
+   ACESSIBILIDADE
+   =============================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Focus para navegação por teclado */
+.btn:focus,
+.form-control:focus,
+.form-select:focus {
+    outline: 2px solid var(--conductor-yellow) !important;
+    outline-offset: 2px !important;
+}

@@ -4,109 +4,161 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CONDUCTOR - Administração</title>
-    <link rel="stylesheet" href="css/main.css">
-    <link rel="stylesheet" href="css/pages/admin.css">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Conductor Theme -->
+    <link rel="stylesheet" href="css/conductor-bootstrap.css">
 </head>
 <body>
-    <div class="admin-page">
-        <!-- Header -->
-        <header class="admin-header">
-            <div class="admin-header-content">
-                <button class="back-btn" onclick="goBack()">
-                    ← Voltar ao Dashboard
-                </button>
-                
-                <div class="admin-title">
-                    <div class="admin-icon">⚙️</div>
-                    <div>
-                        <h1>Administração</h1>
-                        <p>Gestão de usuários e sistema</p>
-                    </div>
-                </div>
-                
-                <div class="admin-nav">
-                    <button class="nav-tab active" onclick="showTab('users')">👥 Usuários</button>
-                    <button class="nav-tab" onclick="showTab('keys')">🔑 Chaves</button>
-                    <button class="nav-tab" onclick="showTab('logs')">📋 Logs</button>
+    <!-- Header -->
+    <nav class="navbar navbar-dark sticky-top conductor-border-bottom">
+        <div class="container-fluid">
+            <button class="btn btn-outline-light btn-sm me-3" onclick="goBack()">
+                ← Voltar ao Dashboard
+            </button>
+            
+            <div class="navbar-brand d-flex align-items-center flex-grow-1">
+                <span class="text-gradient-yellow fs-2 me-3">⚙️</span>
+                <div>
+                    <h1 class="mb-0 fs-4 text-conductor-yellow">Administração</h1>
+                    <small class="text-conductor-light">Gestão de usuários e sistema</small>
                 </div>
             </div>
-        </header>
+            
+            <!-- Nav Pills -->
+            <ul class="nav nav-pills">
+                <li class="nav-item">
+                    <button class="nav-link active" id="users-tab" data-bs-toggle="pill" 
+                            data-bs-target="#users-pane" onclick="showTab('users')">
+                        👥 Usuários
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="keys-tab" data-bs-toggle="pill" 
+                            data-bs-target="#keys-pane" onclick="showTab('keys')">
+                        🔑 Chaves
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="logs-tab" data-bs-toggle="pill" 
+                            data-bs-target="#logs-pane" onclick="showTab('logs')">
+                        📋 Logs
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </nav>
 
-        <!-- Main Content -->
-        <main class="admin-main">
-            <!-- Estatísticas Overview - EXPANDIDAS -->
-            <div class="stats-overview">
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <div class="stat-icon">👥</div>
-                        <div>
-                            <div class="stat-number" id="totalUsers">0</div>
-                            <div class="stat-label">Total de Usuários</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <div class="stat-icon">🔑</div>
-                        <div>
-                            <div class="stat-number" id="totalKeys">0</div>
-                            <div class="stat-label">Chaves Ativas</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <div class="stat-icon">⚠️</div>
-                        <div>
-                            <div class="stat-number" id="expiredKeys">0</div>
-                            <div class="stat-label">Chaves Expiradas</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <div class="stat-icon">✔️</div>
-                        <div>
-                            <div class="stat-number" id="usedKeys">0</div>
-                            <div class="stat-label">Chaves Usadas</div>
+    <!-- Main Content -->
+    <div class="container-fluid py-4">
+        <!-- Stats Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card bg-conductor-card glow-hover">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="text-gradient-yellow fs-2 me-3">👥</div>
+                            <div>
+                                <h5 class="text-conductor-yellow mb-0" id="totalUsers">0</h5>
+                                <small class="text-conductor-light">Total de Usuários</small>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-conductor-card glow-hover">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="text-gradient-yellow fs-2 me-3">🔑</div>
+                            <div>
+                                <h5 class="text-conductor-yellow mb-0" id="totalKeys">0</h5>
+                                <small class="text-conductor-light">Chaves Ativas</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-conductor-card glow-hover">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="text-gradient-yellow fs-2 me-3">⚠️</div>
+                            <div>
+                                <h5 class="text-conductor-yellow mb-0" id="expiredKeys">0</h5>
+                                <small class="text-conductor-light">Chaves Expiradas</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-conductor-card glow-hover">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="text-gradient-yellow fs-2 me-3">✔️</div>
+                            <div>
+                                <h5 class="text-conductor-yellow mb-0" id="usedKeys">0</h5>
+                                <small class="text-conductor-light">Chaves Usadas</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-            <!-- Tab: Usuários -->
-            <div id="usersTab" class="tab-content active">
-                <div class="section-card">
-                    <div class="section-header">
-                        <h2 class="section-title">👥 Gestão de Usuários</h2>
-                        <button class="btn-new" onclick="showNewUserModal()">+ Novo Usuário</button>
+        <!-- Tab Content -->
+        <div class="tab-content fade-in">
+            <!-- Users Tab -->
+            <div class="tab-pane fade show active" id="users-pane" role="tabpanel">
+                <div class="card bg-conductor-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 text-conductor-yellow">
+                            <i class="me-2">👥</i>Gestão de Usuários
+                        </h5>
+                        <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#newUserModal">
+                            + Novo Usuário
+                        </button>
+                    </div>
+                    
+                    <!-- Filters -->
+                    <div class="card-body border-bottom">
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <input type="text" class="form-control" id="userSearch" 
+                                       placeholder="Buscar por nome ou email..." onkeyup="filterUsers()">
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select" id="permissionFilter" onchange="filterUsers()">
+                                    <option value="">Todas as permissões</option>
+                                    <option value="Visitante">Visitante</option>
+                                    <option value="Usuario">Usuário</option>
+                                    <option value="Operador">Operador</option>
+                                    <option value="Administrador">Administrador</option>
+                                    <option value="Desenvolvedor">Desenvolvedor</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select" id="statusFilter" onchange="filterUsers()">
+                                    <option value="">Todos os status</option>
+                                    <option value="ativo">Ativos</option>
+                                    <option value="inativo">Inativos</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-outline-warning w-100" onclick="loadUsers()">
+                                    🔄 Atualizar
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Filtros -->
-                    <div class="filters">
-                        <input type="text" id="userSearch" placeholder="Buscar por nome ou email...">
-                        <select id="permissionFilter">
-                            <option value="">Todas as permissões</option>
-                            <option value="Visitante">Visitante</option>
-                            <option value="Usuario">Usuário</option>
-                            <option value="Operador">Operador</option>
-                            <option value="Administrador">Administrador</option>
-                            <option value="Desenvolvedor">Desenvolvedor</option>
-                        </select>
-                        <select id="statusFilter">
-                            <option value="">Todos os status</option>
-                            <option value="ativo">Ativos</option>
-                            <option value="inativo">Inativos</option>
-                        </select>
-                    </div>
-
-                    <!-- Tabela de Usuários -->
-                    <div class="table-container">
-                        <table class="users-table">
-                            <thead>
+                    <!-- Users Table -->
+                    <div class="table-responsive" style="max-height: 500px;">
+                        <table class="table table-dark table-striped table-hover mb-0">
+                            <thead class="table-warning text-dark sticky-top">
                                 <tr>
                                     <th>ID</th>
                                     <th>Usuário</th>
@@ -114,73 +166,73 @@
                                     <th>Função</th>
                                     <th>Permissão</th>
                                     <th>Status</th>
-                                    <th>Último Login</th>
+                                    <th>Criado em</th>
                                     <th>Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="usersTableBody">
-                                <!-- Usuários serão carregados aqui -->
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-4">
+                                        <div class="loading-spinner me-2"></div>
+                                        Carregando usuários...
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
-            <!-- Tab: Chaves de Acesso - COMPLETA -->
-            <div id="keysTab" class="tab-content">
-                <div class="section-card">
-                    <div class="section-header">
-                        <h2 class="section-title">🔑 Chaves de Acesso</h2>
-                        <button class="btn-new" onclick="showNewKeyModal()">+ Nova Chave</button>
-                    </div>
-
-                    <!-- Estatísticas Detalhadas de Chaves - 6 CONTADORES -->
-                    <div class="key-stats">
-                        <div class="key-stat">
-                            <span class="key-stat-number" id="permanentKeys">0</span>
-                            <span class="key-stat-label">🔑 Permanentes</span>
-                        </div>
-                        <div class="key-stat">
-                            <span class="key-stat-number" id="expiringKeys">0</span>
-                            <span class="key-stat-label">⏰ Expiráveis</span>
-                        </div>
-                        <div class="key-stat">
-                            <span class="key-stat-number" id="oneTimeKeys">0</span>
-                            <span class="key-stat-label">1️⃣ Uso Único</span>
-                        </div>
-                        <div class="key-stat">
-                            <span class="key-stat-number" id="usedKeys">0</span>
-                            <span class="key-stat-label">✔️ Usadas</span>
-                        </div>
-                        <div class="key-stat">
-                            <span class="key-stat-number" id="expiredKeys">0</span>
-                            <span class="key-stat-label">⏰ Expiradas</span>
-                        </div>
-                        <div class="key-stat">
-                            <span class="key-stat-number" id="expiring24h">0</span>
-                            <span class="key-stat-label">⚠️ Expirando 24h</span>
-                        </div>
-                    </div>
-
-                    <!-- Botões de Verificação Manual -->
-                    <div class="key-actions">
-                        <button class="btn btn-secondary" onclick="adminManager.checkAllKeysStatus()">
-                            🔄 Verificar Status de Todas as Chaves
-                        </button>
-                        <button class="btn btn-secondary" onclick="adminManager.loadKeyStatistics()">
-                            📊 Atualizar Estatísticas
-                        </button>
-                        <button class="btn btn-secondary" onclick="exportKeys()">
-                            📄 Exportar Relatório
+            <!-- Keys Tab -->
+            <div class="tab-pane fade" id="keys-pane" role="tabpanel">
+                <div class="card bg-conductor-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 text-conductor-yellow">
+                            <i class="me-2">🔑</i>Gestão de Chaves de Acesso
+                        </h5>
+                        <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#newKeyModal">
+                            + Nova Chave
                         </button>
                     </div>
+                    
+                    <!-- Key Filters -->
+                    <div class="card-body border-bottom">
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <input type="text" class="form-control" id="keySearch" 
+                                       placeholder="Buscar por chave..." onkeyup="filterKeys()">
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select" id="keyTypeFilter" onchange="filterKeys()">
+                                    <option value="">Todos os tipos</option>
+                                    <option value="permanent">Permanente</option>
+                                    <option value="expiring">Expirável</option>
+                                    <option value="single_use">Uso Único</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select" id="keyStatusFilter" onchange="filterKeys()">
+                                    <option value="">Todos os status</option>
+                                    <option value="ativa">Ativas</option>
+                                    <option value="expirada">Expiradas</option>
+                                    <option value="usada">Usadas</option>
+                                    <option value="inativa">Inativas</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-outline-warning w-100" onclick="loadKeys()">
+                                    🔄 Atualizar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
 
-                    <!-- Tabela de Chaves - ATUALIZADA -->
-                    <div class="table-container">
-                        <table class="users-table">
-                            <thead>
+                    <!-- Keys Table -->
+                    <div class="table-responsive" style="max-height: 500px;">
+                        <table class="table table-dark table-striped table-hover mb-0">
+                            <thead class="table-warning text-dark sticky-top">
                                 <tr>
-                                    <th>Código da Chave</th>
+                                    <th>Chave</th>
                                     <th>Tipo</th>
                                     <th>Permissão</th>
                                     <th>Criada em</th>
@@ -191,306 +243,301 @@
                                 </tr>
                             </thead>
                             <tbody id="keysTableBody">
-                                <!-- Chaves serão carregadas aqui -->
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-4">
+                                        <div class="loading-spinner me-2"></div>
+                                        Carregando chaves...
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
-            <!-- Tab: Logs -->
-            <div id="logsTab" class="tab-content">
-                <div class="section-card">
-                    <div class="section-header">
-                        <h2 class="section-title">📋 Logs do Sistema</h2>
-                        <div class="log-controls">
-                            <select id="logFilter">
-                                <option value="">Todas as ações</option>
-                                <option value="login">Login</option>
-                                <option value="logout">Logout</option>
-                                <option value="user_created">Usuário Criado</option>
-                                <option value="user_updated">Usuário Atualizado</option>
-                                <option value="permission_changed">Permissão Alterada</option>
-                                <option value="key_created">Chave Criada</option>
-                                <option value="key_used">Chave Utilizada</option>
-                                <option value="key_expired">Chave Expirada</option>
-                                <option value="system_check">Verificação Sistema</option>
-                            </select>
-                            <button class="btn btn-secondary" onclick="refreshLogs()">🔄 Atualizar</button>
-                            <button class="btn btn-secondary" onclick="debugKeys()">🔍 Debug Chaves</button>
+            <!-- Logs Tab -->
+            <div class="tab-pane fade" id="logs-pane" role="tabpanel">
+                <div class="card bg-conductor-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 text-conductor-yellow">
+                            <i class="me-2">📋</i>Logs do Sistema
+                        </h5>
+                        <button class="btn btn-outline-warning btn-sm" onclick="loadLogs()">
+                            🔄 Atualizar
+                        </button>
+                    </div>
+                    
+                    <!-- Log Filters -->
+                    <div class="card-body border-bottom">
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <input type="text" class="form-control" id="logSearch" 
+                                       placeholder="Buscar em logs..." onkeyup="filterLogs()">
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select" id="logTypeFilter" onchange="filterLogs()">
+                                    <option value="">Todos os tipos</option>
+                                    <option value="auth">Autenticação</option>
+                                    <option value="user">Usuários</option>
+                                    <option value="key">Chaves</option>
+                                    <option value="system">Sistema</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="date" class="form-control" id="logDateFilter" onchange="filterLogs()">
+                            </div>
                         </div>
                     </div>
 
-                    <div class="logs-container" id="logsContainer">
-                        <!-- Logs serão carregados aqui -->
+                    <!-- Logs Table -->
+                    <div class="table-responsive" style="max-height: 500px;">
+                        <table class="table table-dark table-striped table-hover mb-0">
+                            <thead class="table-warning text-dark sticky-top">
+                                <tr>
+                                    <th>Data/Hora</th>
+                                    <th>Tipo</th>
+                                    <th>Usuário</th>
+                                    <th>Ação</th>
+                                    <th>Detalhes</th>
+                                    <th>IP</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logsTableBody">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">
+                                        <div class="loading-spinner me-2"></div>
+                                        Carregando logs...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-            </div>
-        </main>
-
-        <!-- Modal: Novo Usuário -->
-        <div id="newUserModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>👤 Criar Novo Usuário</h3>
-                    <button class="modal-close" onclick="closeModal('newUserModal')">&times;</button>
-                </div>
-                <form id="newUserForm">
-                    <div class="form-grid">
-                        <div class="input-group">
-                            <label for="newUserName">Nome de Usuário</label>
-                            <input type="text" id="newUserName" name="username" required>
-                        </div>
-                        <div class="input-group">
-                            <label for="newUserEmail">Email</label>
-                            <input type="email" id="newUserEmail" name="email" required>
-                        </div>
-                        <div class="input-group">
-                            <label for="newUserPhone">Telefone</label>
-                            <input type="tel" id="newUserPhone" name="phone">
-                        </div>
-                        <div class="input-group">
-                            <label for="newUserFunction">Função</label>
-                            <input type="text" id="newUserFunction" name="function" placeholder="Ex: Engenheiro">
-                        </div>
-                        <div class="input-group">
-                            <label for="newUserPermission">Permissão</label>
-                            <select id="newUserPermission" name="permission" required>
-                                <option value="Visitante">Visitante</option>
-                                <option value="Usuario">Usuário</option>
-                                <option value="Operador">Operador</option>
-                                <option value="Administrador">Administrador</option>
-                                <option value="Desenvolvedor">Desenvolvedor</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label for="newUserPassword">Senha</label>
-                            <input type="password" id="newUserPassword" name="password" required>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" onclick="closeModal('newUserModal')">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">👤 Criar Usuário</button>
-                    </div>
-                </form>
             </div>
         </div>
+    </div>
 
-        <!-- Modal: Nova Chave - COMPLETO -->
-        <div id="newKeyModal" class="modal">
+    <!-- Modal: New User -->
+    <div class="modal fade" id="newUserModal" tabindex="-1">
+        <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3>🔑 Criar Nova Chave</h3>
-                    <button class="modal-close" onclick="closeModal('newKeyModal')">&times;</button>
+                    <h5 class="modal-title text-conductor-yellow">
+                        <i class="me-2">👤</i>Criar Novo Usuário
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <form id="newKeyForm">
-                    <div class="input-group">
-                        <label for="keyType">Tipo de Chave</label>
-                        <select id="keyType" name="type" required onchange="toggleExpiryField()">
-                            <option value="permanent">🔑 Permanente</option>
-                            <option value="expiring">⏰ Expirável</option>
-                            <option value="single_use">1️⃣ Uso Único</option>
-                        </select>
-                    </div>
-                    
-                    <div class="input-group">
-                        <label for="keyPermission">Permissão Concedida</label>
-                        <select id="keyPermission" name="permission" required>
-                            <option value="Usuario">Usuário</option>
-                            <option value="Operador">Operador</option>
-                            <option value="Administrador">Administrador</option>
-                            <option value="Desenvolvedor">Desenvolvedor</option>
-                        </select>
-                    </div>
-                    
-                    <!-- Campo de Expiração (mostrado apenas para chaves expiráveis) -->
-                    <div class="input-group" id="expiryGroup" style="display: none;">
-                        <label for="keyExpiry">Data de Expiração</label>
-                        <input type="datetime-local" id="keyExpiry" name="expiry">
-                        <small class="text-gray">Defina quando esta chave deixará de funcionar</small>
-                    </div>
-                    
-                    <div class="input-group">
-                        <label for="keyDescription">Descrição (opcional)</label>
-                        <input type="text" id="keyDescription" name="description" placeholder="Ex: Chave para estagiários">
-                    </div>
-                    
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" onclick="closeModal('newKeyModal')">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">🔑 Criar Chave</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Modal: Editar Usuário -->
-        <div id="editUserModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>✏️ Editar Usuário</h3>
-                    <button class="modal-close" onclick="closeModal('editUserModal')">&times;</button>
-                </div>
-                <form id="editUserForm">
-                    <input type="hidden" id="editUserId">
-                    <div class="form-grid">
-                        <div class="input-group">
-                            <label for="editUserName">Nome de Usuário</label>
-                            <input type="text" id="editUserName" name="username" required>
-                        </div>
-                        <div class="input-group">
-                            <label for="editUserEmail">Email</label>
-                            <input type="email" id="editUserEmail" name="email" required>
-                        </div>
-                        <div class="input-group">
-                            <label for="editUserPhone">Telefone</label>
-                            <input type="tel" id="editUserPhone" name="phone">
-                        </div>
-                        <div class="input-group">
-                            <label for="editUserFunction">Função</label>
-                            <input type="text" id="editUserFunction" name="function">
+                <form id="newUserForm" onsubmit="createUser(event)">
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Nome de Usuário *</label>
+                                <input type="text" class="form-control" name="username" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email *</label>
+                                <input type="email" class="form-control" name="email" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Senha *</label>
+                                <input type="password" class="form-control" name="password" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Permissão *</label>
+                                <select class="form-select" name="permissao" required>
+                                    <option value="Visitante">Visitante</option>
+                                    <option value="Usuario">Usuário</option>
+                                    <option value="Operador">Operador</option>
+                                    <option value="Administrador">Administrador</option>
+                                    <option value="Desenvolvedor">Desenvolvedor</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Função</label>
+                                <input type="text" class="form-control" name="funcao" 
+                                       placeholder="Ex: Engenheiro, Técnico...">
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" onclick="closeModal('editUserModal')">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">💾 Salvar Alterações</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-warning">Criar Usuário</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
+    <!-- Modal: Edit User -->
+    <div class="modal fade" id="editUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-conductor-yellow">
+                        <i class="me-2">✏️</i>Editar Usuário
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="editUserForm" onsubmit="updateUser(event)">
+                    <input type="hidden" id="editUserId" name="id">
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Nome de Usuário *</label>
+                                <input type="text" class="form-control" id="editUsername" name="username" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email *</label>
+                                <input type="email" class="form-control" id="editEmail" name="email" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Permissão *</label>
+                                <select class="form-select" id="editPermission" name="permissao" required>
+                                    <option value="Visitante">Visitante</option>
+                                    <option value="Usuario">Usuário</option>
+                                    <option value="Operador">Operador</option>
+                                    <option value="Administrador">Administrador</option>
+                                    <option value="Desenvolvedor">Desenvolvedor</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Função</label>
+                                <input type="text" class="form-control" id="editFuncao" name="funcao">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-warning">Salvar Alterações</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: New Key -->
+    <div class="modal fade" id="newKeyModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-conductor-yellow">
+                        <i class="me-2">🔑</i>Criar Nova Chave
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="newKeyForm" onsubmit="createKey(event)">
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Tipo de Chave *</label>
+                                <select class="form-select" name="tipo" required onchange="toggleKeyOptions()">
+                                    <option value="permanent">🔑 Permanente</option>
+                                    <option value="expiring">⏰ Expirável</option>
+                                    <option value="single_use">1️⃣ Uso Único</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Permissão *</label>
+                                <select class="form-select" name="permissao" required>
+                                    <option value="Visitante">Visitante</option>
+                                    <option value="Usuario">Usuário</option>
+                                    <option value="Operador">Operador</option>
+                                    <option value="Administrador">Administrador</option>
+                                    <option value="Desenvolvedor">Desenvolvedor</option>
+                                </select>
+                            </div>
+                            <div class="col-12 d-none" id="expirationGroup">
+                                <label class="form-label">Data de Expiração</label>
+                                <input type="datetime-local" class="form-control" name="data_expiracao">
+                            </div>
+                            <div class="col-12 d-none" id="usesGroup">
+                                <label class="form-label">Máximo de Usos</label>
+                                <input type="number" class="form-control" name="usos_maximo" min="1" 
+                                       placeholder="Deixe vazio para ilimitado">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Descrição</label>
+                                <textarea class="form-control" name="descricao" rows="3" 
+                                          placeholder="Finalidade desta chave..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-warning">Criar Chave</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer"></div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
     <!-- Scripts -->
     <script src="js/utils/api.js"></script>
     <script src="js/utils/auth.js"></script>
     <script src="js/pages/admin.js"></script>
-
+    
     <script>
-        // ===============================================
-        // FUNÇÕES GLOBAIS PARA CONTROLE DA INTERFACE
-        // ===============================================
-
-        // 🔄 Alternar campo de expiração baseado no tipo de chave
-        function toggleExpiryField() {
-            const keyType = document.getElementById('keyType').value;
-            const expiryGroup = document.getElementById('expiryGroup');
-            const expiryInput = document.getElementById('keyExpiry');
-            
-            if (keyType === 'expiring') {
-                expiryGroup.style.display = 'block';
-                expiryInput.required = true;
-                
-                // Definir data mínima como agora + 1 hora
-                const now = new Date();
-                now.setHours(now.getHours() + 1);
-                expiryInput.min = now.toISOString().slice(0, 16);
-                
-            } else {
-                expiryGroup.style.display = 'none';
-                expiryInput.required = false;
-                expiryInput.value = '';
-            }
-        }
-
-        // 🔄 Mostrar modal de nova chave
-        function showNewKeyModal() {
-            document.getElementById('newKeyModal').style.display = 'flex';
-            toggleExpiryField(); // Configurar campo de expiração
-        }
-
-        // 🔄 Mostrar modal de novo usuário
-        function showNewUserModal() {
-            document.getElementById('newUserModal').style.display = 'flex';
-        }
-
-        // 🔄 Fechar modal
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-            
-            // Limpar formulários
-            const modal = document.getElementById(modalId);
-            const forms = modal.querySelectorAll('form');
-            forms.forEach(form => form.reset());
-        }
-
-        // 🔄 Navegar entre tabs
-        function showTab(tabName) {
-            // Remover active das tabs
-            document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
-            // Ativar tab selecionada
-            event.target.classList.add('active');
-            document.getElementById(tabName + 'Tab').classList.add('active');
-            
-            // Atualizar dados da tab
-            if (window.adminManager) {
-                window.adminManager.currentTab = tabName;
-                
-                switch(tabName) {
-                    case 'users':
-                        window.adminManager.loadUsers();
-                        break;
-                    case 'keys':
-                        window.adminManager.loadKeys();
-                        window.adminManager.loadKeyStatistics();
-                        break;
-                    case 'logs':
-                        window.adminManager.loadLogs();
-                        break;
-                }
-            }
-        }
-
-        // 🔄 Voltar ao dashboard
+        // Global functions for navigation and modals
         function goBack() {
             window.location.href = 'dashboard.html';
         }
 
-        // 🔄 Atualizar logs
-        function refreshLogs() {
+        function showTab(tabName) {
+            const triggerEl = document.querySelector(`#${tabName}-tab`);
+            const tab = new bootstrap.Tab(triggerEl);
+            tab.show();
+            
             if (window.adminManager) {
-                window.adminManager.loadLogs();
-            }
-        }
-
-        // 🔄 Exportar chaves
-        function exportKeys() {
-            if (window.adminManager) {
-                window.adminManager.exportKeysReport();
-            }
-        }
-
-        // 🔄 Debug de chaves
-        function debugKeys() {
-            if (window.adminManager) {
-                window.adminManager.debugKeyStatus();
-            }
-        }
-
-        // ===============================================
-        // EVENT LISTENERS GLOBAIS
-        // ===============================================
-
-        document.addEventListener('DOMContentLoaded', function() {
-            // Fechar modais com ESC
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    document.querySelectorAll('.modal').forEach(modal => {
-                        modal.style.display = 'none';
-                    });
+                switch(tabName) {
+                    case 'users': window.adminManager.loadUsers(); break;
+                    case 'keys': window.adminManager.loadKeys(); break;
+                    case 'logs': window.adminManager.loadLogs(); break;
                 }
-            });
+            }
+        }
 
-            // Fechar modais clicando fora
-            document.querySelectorAll('.modal').forEach(modal => {
-                modal.addEventListener('click', function(e) {
-                    if (e.target === modal) {
-                        modal.style.display = 'none';
+        function toggleKeyOptions() {
+            const keyType = document.querySelector('select[name="tipo"]').value;
+            const expirationGroup = document.getElementById('expirationGroup');
+            const usesGroup = document.getElementById('usesGroup');
+
+            expirationGroup.classList.add('d-none');
+            usesGroup.classList.add('d-none');
+
+            if (keyType === 'expiring') {
+                expirationGroup.classList.remove('d-none');
+            } else if (keyType === 'single_use') {
+                usesGroup.classList.remove('d-none');
+            }
+        }
+
+        // Filter functions
+        function filterUsers() { if (window.adminManager) window.adminManager.filterUsers(); }
+        function filterKeys() { if (window.adminManager) window.adminManager.filterKeys(); }
+        function filterLogs() { if (window.adminManager) window.adminManager.filterLogs(); }
+        function loadUsers() { if (window.adminManager) window.adminManager.loadUsers(); }
+        function loadKeys() { if (window.adminManager) window.adminManager.loadKeys(); }
+        function loadLogs() { if (window.adminManager) window.adminManager.loadLogs(); }
+        function createUser(event) { if (window.adminManager) window.adminManager.createUser(event); }
+        function updateUser(event) { if (window.adminManager) window.adminManager.updateUser(event); }
+        function createKey(event) { if (window.adminManager) window.adminManager.createKey(event); }
+
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.authManager) {
+                window.authManager.requireAdmin().then(hasAccess => {
+                    if (hasAccess) {
+                        showTab('users');
+                        console.log('✅ Admin panel Bootstrap carregado');
                     }
                 });
-            });
-
-            console.log('🎯 Admin HTML carregado e event listeners configurados');
+            }
         });
     </script>
 </body>

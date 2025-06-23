@@ -4,181 +4,384 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CONDUCTOR - Dashboard</title>
-    <link rel="stylesheet" href="css/main.css">
-    <link rel="stylesheet" href="css/pages/dashboard.css">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Conductor Theme -->
+    <link rel="stylesheet" href="css/conductor-bootstrap.css">
 </head>
 <body>
-    <div class="dashboard-page">
-        <!-- Header -->
-        <header class="dashboard-header">
-            <div class="header-content">
-                <div class="logo-section">
-                    <div class="logo-mini">⚡</div>
-                    <span class="app-name">CONDUCTOR</span>
+    <!-- Header -->
+    <nav class="navbar navbar-dark sticky-top conductor-border-bottom">
+        <div class="container-fluid">
+            <div class="navbar-brand d-flex align-items-center">
+                <span class="logo-glow fs-2 me-3">⚡</span>
+                <div>
+                    <h1 class="mb-0 fs-4 text-conductor-yellow">CONDUCTOR</h1>
+                    <small class="text-conductor-light">Laboratório P&D</small>
+                </div>
+            </div>
+            
+            <div class="d-flex align-items-center gap-3">
+                <!-- System Status -->
+                <div class="status-indicator">
+                    <div class="status-dot"></div>
+                    <span class="text-conductor-light small">Sistema Online</span>
                 </div>
                 
-                <div class="system-status" id="systemStatus">
-                    <div class="status-indicator">
-                        <span class="status-dot"></span>
-                        <span class="status-text">Sistema Online</span>
-                    </div>
-                </div>
-                
-                <div class="user-section">
-                    <div class="user-info">
-                        <span class="user-name" id="userName">Usuário</span>
-                        <span class="user-role" id="userRole">Visitante</span>
-                    </div>
-                    <button class="btn-logout" onclick="logout()">🚪 Sair</button>
+                <!-- User Info -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-warning btn-sm dropdown-toggle" 
+                            type="button" data-bs-toggle="dropdown">
+                        <span id="userName">Usuário</span>
+                        <small class="text-conductor-light">(<span id="userRole">Visitante</span>)</small>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end">
+                        <li>
+                            <a class="dropdown-item" href="profile.html">
+                                👤 Meu Perfil
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item text-danger" href="#" onclick="logout()">
+                                🚪 Sair
+                            </a>
+                        </li>
+                    </ul>
                 </div>
             </div>
-        </header>
+        </div>
+    </nav>
 
-        <!-- Main Content -->
-        <main class="dashboard-main">
-            <!-- Status Bar -->
-            <div class="status-bar">
-                <div class="status-grid">
-                    <div class="status-card">
-                        <div class="status-icon">💾</div>
-                        <div class="status-info">
-                            <span class="status-label">Database</span>
-                            <span class="status-value" id="dbStatus">Conectado</span>
-                        </div>
-                    </div>
-                    
-                    <div class="status-card">
-                        <div class="status-icon">👥</div>
-                        <div class="status-info">
-                            <span class="status-label">Usuários Online</span>
-                            <span class="status-value" id="usersOnline">1</span>
-                        </div>
-                    </div>
-                    
-                    <div class="status-card">
-                        <div class="status-icon">🔔</div>
-                        <div class="status-info">
-                            <span class="status-label">Notificações</span>
-                            <span class="status-value" id="notifications">0</span>
-                        </div>
-                    </div>
-                    
-                    <div class="status-card">
-                        <div class="status-icon">⚡</div>
-                        <div class="status-info">
-                            <span class="status-label">Atividade</span>
-                            <span class="status-value" id="lastActivity">Agora</span>
+    <!-- Main Content -->
+    <div class="container-fluid py-4">
+        <!-- Status Overview -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card bg-conductor-card glow-hover">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="text-gradient-yellow fs-1 me-3">💾</div>
+                            <div>
+                                <h6 class="card-title text-conductor-yellow mb-1">Database</h6>
+                                <p class="card-text mb-0" id="dbStatus">Conectado</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <!-- PlayStation Menu -->
-            <div class="menu-container">
-                <h2 class="menu-title">Centro de Controle</h2>
-                
-                <div class="menu-navigation">
-                    <button class="nav-btn nav-prev" onclick="navigateMenu(-1)">‹</button>
-                    
-                    <div class="menu-viewport">
-                        <div class="menu-track" id="menuTrack">
-                            <!-- Card 1: Perfil -->
-                            <div class="menu-card active" data-page="profile">
-                                <div class="card-icon">👤</div>
-                                <div class="card-content">
-                                    <h3>MEU PERFIL</h3>
-                                    <p>Visualizar e editar informações pessoais</p>
-                                    <div class="card-action">
-                                        <button class="btn btn-primary" onclick="goToPage('profile.html')">ACESSAR</button>
-                                    </div>
-                                </div>
+            
+            <div class="col-md-3 mb-3">
+                <div class="card bg-conductor-card glow-hover">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="text-gradient-yellow fs-1 me-3">👥</div>
+                            <div>
+                                <h6 class="card-title text-conductor-yellow mb-1">Usuários Online</h6>
+                                <p class="card-text mb-0" id="onlineUsers">1</p>
                             </div>
-
-                            <!-- Card 2: Administração (só Admin/Dev) -->
-                            <div class="menu-card" data-page="admin" id="adminCard" style="display: none;">
-                                <div class="card-icon">⚙️</div>
-                                <div class="card-content">
-                                    <h3>ADMINISTRAÇÃO</h3>
-                                    <p>Gerenciar usuários e configurações do sistema</p>
-                                    <div class="card-action">
-                                        <button class="btn btn-primary" onclick="goToPage('admin.html')">GERENCIAR</button>
-                                    </div>
-                                </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 mb-3">
+                <div class="card bg-conductor-card glow-hover">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="text-gradient-yellow fs-1 me-3">🔑</div>
+                            <div>
+                                <h6 class="card-title text-conductor-yellow mb-1">Chaves Ativas</h6>
+                                <p class="card-text mb-0" id="activeKeys">0</p>
                             </div>
-
-                            <!-- Card 3: Inventário (placeholder) -->
-                            <div class="menu-card" data-page="inventory">
-                                <div class="card-icon">📋</div>
-                                <div class="card-content">
-                                    <h3>INVENTÁRIO</h3>
-                                    <p>Controle de componentes eletrônicos</p>
-                                    <div class="card-action">
-                                        <button class="btn btn-secondary" disabled>EM BREVE</button>
-                                    </div>
-                                </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 mb-3">
+                <div class="card bg-conductor-card glow-hover">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="text-gradient-yellow fs-1 me-3">⚡</div>
+                            <div>
+                                <h6 class="card-title text-conductor-yellow mb-1">Uptime</h6>
+                                <p class="card-text mb-0" id="systemUptime">99.9%</p>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-                            <!-- Card 4: Documentos (placeholder) -->
-                            <div class="menu-card" data-page="documents">
-                                <div class="card-icon">📄</div>
-                                <div class="card-content">
-                                    <h3>DOCUMENTOS</h3>
-                                    <p>Gestão de documentos da qualidade</p>
-                                    <div class="card-action">
-                                        <button class="btn btn-secondary" disabled>EM BREVE</button>
-                                    </div>
-                                </div>
+        <!-- Main Menu Grid -->
+        <div class="row g-4">
+            <!-- Profile Card -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card menu-card h-100" onclick="goToPage('profile.html')">
+                    <div class="card-body text-center p-4">
+                        <div class="card-icon mb-3">👤</div>
+                        <h5 class="card-title text-conductor-yellow">MEU PERFIL</h5>
+                        <p class="card-text text-conductor-light mb-4">
+                            Visualizar e editar informações pessoais
+                        </p>
+                        <div class="mt-auto">
+                            <button class="btn btn-outline-warning">ACESSAR</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Card (conditional) -->
+            <div class="col-md-6 col-lg-4" id="adminCard" style="display: none;">
+                <div class="card menu-card h-100" onclick="goToPage('admin.html')">
+                    <div class="card-body text-center p-4">
+                        <div class="card-icon mb-3">⚙️</div>
+                        <h5 class="card-title text-conductor-yellow">ADMINISTRAÇÃO</h5>
+                        <p class="card-text text-conductor-light mb-4">
+                            Gerenciar usuários e configurações do sistema
+                        </p>
+                        <div class="mt-auto">
+                            <button class="btn btn-warning">GERENCIAR</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inventory Card (placeholder) -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card menu-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="card-icon mb-3">📋</div>
+                        <h5 class="card-title text-conductor-yellow">INVENTÁRIO</h5>
+                        <p class="card-text text-conductor-light mb-4">
+                            Controle de componentes eletrônicos
+                        </p>
+                        <div class="mt-auto">
+                            <button class="btn btn-secondary" disabled>EM BREVE</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Documents Card (placeholder) -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card menu-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="card-icon mb-3">📄</div>
+                        <h5 class="card-title text-conductor-yellow">DOCUMENTOS</h5>
+                        <p class="card-text text-conductor-light mb-4">
+                            Gestão de documentos da qualidade
+                        </p>
+                        <div class="mt-auto">
+                            <button class="btn btn-secondary" disabled>EM BREVE</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prototypes Card (placeholder) -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card menu-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="card-icon mb-3">🔬</div>
+                        <h5 class="card-title text-conductor-yellow">PROTÓTIPOS</h5>
+                        <p class="card-text text-conductor-light mb-4">
+                            Controle de protótipos em desenvolvimento
+                        </p>
+                        <div class="mt-auto">
+                            <button class="btn btn-secondary" disabled>EM BREVE</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Equipment Card (placeholder) -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card menu-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="card-icon mb-3">🔧</div>
+                        <h5 class="card-title text-conductor-yellow">EQUIPAMENTOS</h5>
+                        <p class="card-text text-conductor-light mb-4">
+                            Gestão de equipamentos e instrumentos
+                        </p>
+                        <div class="mt-auto">
+                            <button class="btn btn-secondary" disabled>EM BREVE</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Info -->
+        <div class="row mt-5">
+            <div class="col-12">
+                <div class="card bg-conductor-card">
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <h6 class="text-conductor-yellow">Versão</h6>
+                                <p class="text-conductor-light mb-0">v1.0.0</p>
                             </div>
-
-                            <!-- Card 5: Protótipos (placeholder) -->
-                            <div class="menu-card" data-page="prototypes">
-                                <div class="card-icon">🔧</div>
-                                <div class="card-content">
-                                    <h3>PROTÓTIPOS</h3>
-                                    <p>Controle e testes de protótipos</p>
-                                    <div class="card-action">
-                                        <button class="btn btn-secondary" disabled>EM BREVE</button>
-                                    </div>
+                            <div class="col-md-3">
+                                <h6 class="text-conductor-yellow">Última Atualização</h6>
+                                <p class="text-conductor-light mb-0" id="lastUpdate">Hoje</p>
+                            </div>
+                            <div class="col-md-3">
+                                <h6 class="text-conductor-yellow">Suporte</h6>
+                                <p class="text-conductor-light mb-0">suporte@conductor.lab</p>
+                            </div>
+                            <div class="col-md-3">
+                                <h6 class="text-conductor-yellow">Status</h6>
+                                <div class="status-indicator justify-content-center">
+                                    <div class="status-dot"></div>
+                                    <span class="text-conductor-light">Operacional</span>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <button class="nav-btn nav-next" onclick="navigateMenu(1)">›</button>
-                </div>
-
-                <!-- Indicadores -->
-                <div class="menu-indicators" id="menuIndicators">
-                    <span class="indicator active"></span>
-                    <span class="indicator"></span>
-                    <span class="indicator"></span>
-                    <span class="indicator"></span>
                 </div>
             </div>
-
-            <!-- Quick Stats -->
-            <div class="stats-section">
-                <h3>Estatísticas Rápidas</h3>
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <span class="stat-number" id="totalUsers">0</span>
-                        <span class="stat-label">Total de Usuários</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-number" id="activeProjects">0</span>
-                        <span class="stat-label">Projetos Ativos</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-number" id="systemUptime">99.9%</span>
-                        <span class="stat-label">Uptime do Sistema</span>
-                    </div>
-                </div>
-            </div>
-        </main>
+        </div>
     </div>
 
+    <!-- Toast Container -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer"></div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Scripts -->
     <script src="js/utils/api.js"></script>
     <script src="js/utils/auth.js"></script>
     <script src="js/pages/dashboard.js"></script>
+
+    <script>
+        // ===============================================
+        // DASHBOARD PAGE LOGIC
+        // ===============================================
+
+        class DashboardPage {
+            constructor() {
+                this.init();
+            }
+
+            async init() {
+                // Protect page
+                if (!window.authManager) {
+                    console.error('AuthManager not available');
+                    return;
+                }
+
+                const isAuthenticated = await window.authManager.requireAuth();
+                if (!isAuthenticated) return;
+
+                // Load user info and setup page
+                this.loadUserInfo();
+                this.setupPermissionBasedVisibility();
+                this.loadSystemStats();
+                this.updateLastUpdate();
+            }
+
+            loadUserInfo() {
+                const user = window.authManager.getCurrentUser();
+                if (user) {
+                    document.getElementById('userName').textContent = user.username || 'Usuário';
+                    document.getElementById('userRole').textContent = user.permissao || 'Visitante';
+                }
+            }
+
+            setupPermissionBasedVisibility() {
+                // Show admin card if user is admin
+                if (window.authManager.hasPermission('Administrador')) {
+                    document.getElementById('adminCard').style.display = 'block';
+                }
+            }
+
+            async loadSystemStats() {
+                try {
+                    const stats = await window.conductorAPI.getSystemStats();
+                    if (stats) {
+                        if (stats.activeKeys !== undefined) {
+                            document.getElementById('activeKeys').textContent = stats.activeKeys;
+                        }
+                        if (stats.onlineUsers !== undefined) {
+                            document.getElementById('onlineUsers').textContent = stats.onlineUsers;
+                        }
+                        if (stats.uptime !== undefined) {
+                            document.getElementById('systemUptime').textContent = stats.uptime;
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Could not load system stats:', error);
+                    // Keep default values
+                }
+            }
+
+            updateLastUpdate() {
+                const now = new Date();
+                const timeString = now.toLocaleString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                document.getElementById('lastUpdate').textContent = timeString;
+            }
+
+            showToast(message, type) {
+                const toastHtml = `
+                    <div class="toast align-items-center text-white bg-${type} border-0" role="alert">
+                        <div class="d-flex">
+                            <div class="toast-body">
+                                ${this.getToastIcon(type)} ${message}
+                            </div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                        </div>
+                    </div>
+                `;
+                
+                const toastContainer = document.getElementById('toastContainer');
+                toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+                
+                const toastElement = toastContainer.lastElementChild;
+                const toast = new bootstrap.Toast(toastElement);
+                toast.show();
+                
+                toastElement.addEventListener('hidden.bs.toast', () => {
+                    toastElement.remove();
+                });
+            }
+
+            getToastIcon(type) {
+                const icons = {
+                    'success': '✅',
+                    'danger': '❌',
+                    'warning': '⚠️',
+                    'info': 'ℹ️'
+                };
+                return icons[type] || 'ℹ️';
+            }
+        }
+
+        // Global functions
+        function goToPage(page) {
+            window.location.href = page;
+        }
+
+        function logout() {
+            if (window.authManager) {
+                window.authManager.logout();
+            }
+        }
+
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            new DashboardPage();
+        });
+    </script>
 </body>
 </html>

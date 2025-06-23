@@ -4,140 +4,670 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CONDUCTOR - Meu Perfil</title>
-    <link rel="stylesheet" href="css/main.css">
-    <link rel="stylesheet" href="css/pages/profile.css">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Conductor Theme -->
+    <link rel="stylesheet" href="css/conductor-bootstrap.css">
 </head>
 <body>
-    <div class="profile-page">
-        <!-- Header -->
-        <header class="profile-header">
-            <div class="profile-header-content">
-                <button class="back-btn" onclick="goBack()">
-                    ← Voltar ao Dashboard
-                </button>
+    <!-- Header -->
+    <nav class="navbar navbar-dark sticky-top conductor-border-bottom">
+        <div class="container-fluid">
+            <button class="btn btn-outline-light btn-sm me-3" onclick="goBack()">
+                ← Voltar ao Dashboard
+            </button>
+            
+            <div class="navbar-brand d-flex align-items-center flex-grow-1">
+                <span class="text-gradient-yellow fs-2 me-3">👤</span>
+                <div>
+                    <h1 class="mb-0 fs-4 text-conductor-yellow" id="profilePageTitle">Meu Perfil</h1>
+                    <small class="text-conductor-light">Informações pessoais</small>
+                </div>
+            </div>
+            
+            <div class="d-flex align-items-center">
+                <div class="status-indicator">
+                    <div class="status-dot"></div>
+                    <span class="text-conductor-light small">Perfil Ativo</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid py-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
                 
-                <div class="profile-title">
-                    <div class="profile-avatar" id="profileAvatar">👤</div>
-                    <div class="profile-info">
-                        <h1 id="profileName">Carregando...</h1>
-                        <div class="profile-role" id="profileRole">Carregando...</div>
+                <!-- Profile Header -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card bg-conductor-card glow-hover">
+                            <div class="card-body text-center py-4">
+                                <div class="text-gradient-yellow display-4 mb-3" id="profileAvatar">👤</div>
+                                <h2 class="text-conductor-yellow mb-1" id="profileName">Carregando...</h2>
+                                <p class="text-conductor-light mb-2" id="profileEmail">carregando@email.com</p>
+                                <span class="badge fs-6 me-2" id="profileRole">Carregando...</span>
+                                <span class="badge bg-success fs-6" id="profileStatus">Ativo</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Tabs -->
+                <ul class="nav nav-pills mb-4 justify-content-center">
+                    <li class="nav-item">
+                        <button class="nav-link active" id="personal-tab" data-bs-toggle="pill" 
+                                data-bs-target="#personal-pane">
+                            📝 Informações Pessoais
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="security-tab" data-bs-toggle="pill" 
+                                data-bs-target="#security-pane">
+                            🔒 Segurança
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="activity-tab" data-bs-toggle="pill" 
+                                data-bs-target="#activity-pane">
+                            📊 Atividade
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content fade-in">
+                    
+                    <!-- Personal Info Tab -->
+                    <div class="tab-pane fade show active" id="personal-pane">
+                        <div class="card bg-conductor-card">
+                            <div class="card-header">
+                                <h5 class="mb-0 text-conductor-yellow">
+                                    <i class="me-2">📝</i>Informações Pessoais
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="personalMessage" class="alert d-none"></div>
+                                
+                                <form id="personalForm">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label for="editUsername" class="form-label">Nome de Usuário</label>
+                                            <input type="text" class="form-control" id="editUsername" 
+                                                   name="username" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="editEmail" class="form-label">Email</label>
+                                            <input type="email" class="form-control" id="editEmail" 
+                                                   name="email" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="editFuncao" class="form-label">Função</label>
+                                            <input type="text" class="form-control" id="editFuncao" 
+                                                   name="funcao" placeholder="Ex: Engenheiro, Técnico...">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="editPermissao" class="form-label">Permissão</label>
+                                            <input type="text" class="form-control" id="editPermissao" 
+                                                   name="permissao" readonly>
+                                            <div class="form-text">
+                                                <small class="text-conductor-light">
+                                                    Apenas administradores podem alterar permissões
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <label for="editBio" class="form-label">Biografia</label>
+                                            <textarea class="form-control" id="editBio" name="bio" rows="3"
+                                                      placeholder="Conte um pouco sobre você..."></textarea>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-end mt-4">
+                                        <button type="button" class="btn btn-secondary me-2" onclick="resetPersonalForm()">
+                                            Cancelar
+                                        </button>
+                                        <button type="submit" class="btn btn-warning">
+                                            <span class="spinner-border spinner-border-sm me-2 d-none" id="personalSpinner"></span>
+                                            Salvar Alterações
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Security Tab -->
+                    <div class="tab-pane fade" id="security-pane">
+                        <div class="row g-4">
+                            <!-- Change Password -->
+                            <div class="col-12">
+                                <div class="card bg-conductor-card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0 text-conductor-yellow">
+                                            <i class="me-2">🔒</i>Alterar Senha
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="passwordMessage" class="alert d-none"></div>
+                                        
+                                        <form id="passwordForm">
+                                            <div class="row g-3">
+                                                <div class="col-12">
+                                                    <label for="currentPassword" class="form-label">Senha Atual *</label>
+                                                    <input type="password" class="form-control" id="currentPassword" 
+                                                           name="currentPassword" required>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label for="newPassword" class="form-label">Nova Senha *</label>
+                                                    <input type="password" class="form-control" id="newPassword" 
+                                                           name="newPassword" required minlength="6">
+                                                    <div class="form-text">
+                                                        <small class="text-conductor-light">Mínimo 6 caracteres</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label for="confirmPassword" class="form-label">Confirmar Nova Senha *</label>
+                                                    <input type="password" class="form-control" id="confirmPassword" 
+                                                           name="confirmPassword" required>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="d-flex justify-content-end mt-4">
+                                                <button type="button" class="btn btn-secondary me-2" onclick="resetPasswordForm()">
+                                                    Cancelar
+                                                </button>
+                                                <button type="submit" class="btn btn-warning">
+                                                    <span class="spinner-border spinner-border-sm me-2 d-none" id="passwordSpinner"></span>
+                                                    Alterar Senha
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Security Info -->
+                            <div class="col-12">
+                                <div class="card bg-conductor-card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0 text-conductor-yellow">
+                                            <i class="me-2">🛡️</i>Informações de Segurança
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <h6 class="text-conductor-yellow">Último Login</h6>
+                                                <p class="text-conductor-light mb-0" id="lastLogin">Carregando...</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6 class="text-conductor-yellow">IP do Último Acesso</h6>
+                                                <p class="text-conductor-light mb-0" id="lastLoginIP">Carregando...</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6 class="text-conductor-yellow">Conta Criada em</h6>
+                                                <p class="text-conductor-light mb-0" id="accountCreated">Carregando...</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6 class="text-conductor-yellow">Status da Conta</h6>
+                                                <span class="badge bg-success" id="accountStatus">Ativa</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Activity Tab -->
+                    <div class="tab-pane fade" id="activity-pane">
+                        <div class="card bg-conductor-card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0 text-conductor-yellow">
+                                    <i class="me-2">📊</i>Atividade Recente
+                                </h5>
+                                <button class="btn btn-outline-warning btn-sm" onclick="loadUserActivity()">
+                                    🔄 Atualizar
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive" style="max-height: 400px;">
+                                    <table class="table table-dark table-striped table-hover mb-0">
+                                        <thead class="table-warning text-dark sticky-top">
+                                            <tr>
+                                                <th>Data/Hora</th>
+                                                <th>Ação</th>
+                                                <th>Detalhes</th>
+                                                <th>IP</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="activityTableBody">
+                                            <tr>
+                                                <td colspan="4" class="text-center text-muted py-4">
+                                                    <div class="loading-spinner me-2"></div>
+                                                    Carregando atividade...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Danger Zone (Optional) -->
+                <div class="card bg-conductor-card mt-4 border-danger">
+                    <div class="card-header bg-danger bg-opacity-25">
+                        <h5 class="mb-0 text-danger">
+                            <i class="me-2">⚠️</i>Zona de Perigo
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-conductor-light mb-3">
+                            Ações irreversíveis que afetam permanentemente sua conta.
+                        </p>
+                        <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                            🗑️ Excluir Conta
+                        </button>
                     </div>
                 </div>
             </div>
-        </header>
-
-        <!-- Main Content -->
-        <main class="profile-main">
-            <!-- Informações Pessoais -->
-            <section class="profile-section">
-                <h2 class="section-title">👤 Informações Pessoais</h2>
-                <div id="personalMessage" class="message"></div>
-
-                <form id="personalForm">
-                    <div class="form-grid">
-                        <div class="input-group">
-                            <label for="editUsername">Nome de Usuário</label>
-                            <input type="text" id="editUsername" name="username" required>
-                        </div>
-                        <div class="input-group">
-                            <label for="editEmail">Email</label>
-                            <input type="email" id="editEmail" name="email" required>
-                        </div>
-                        <div class="input-group">
-                            <label for="editPhone">Telefone</label>
-                            <input type="tel" id="editPhone" name="phone">
-                        </div>
-                        <div class="input-group">
-                            <label for="editFunction">Função</label>
-                            <select id="editFunction" name="function" required>
-                                <option value="Estagiario">Estagiário</option>
-                                <option value="Analista">Analista</option>
-                                <option value="Coordenador">Coordenador</option>
-                                <option value="Gestor">Gestor</option>
-                                <option value="Diretor">Diretor</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="input-group">
-                        <label for="editPermission">Nível de Permissão</label>
-                        <input type="text" id="editPermission" name="permission" disabled>
-                    </div>
-                    <div class="btn-group">
-                        <button type="button" class="btn btn-secondary" onclick="resetPersonalForm()">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">💾 Salvar Alterações</button>
-                    </div>
-                </form>
-            </section>
-
-            <!-- Alterar Senha -->
-            <section class="profile-section">
-                <h2 class="section-title">🔐 Alterar Senha</h2>
-                <div id="passwordMessage" class="message"></div>
-
-                <form id="passwordForm">
-                    <div class="input-group">
-                        <label for="currentPassword">Senha Atual</label>
-                        <input type="password" id="currentPassword" name="currentPassword" required>
-                    </div>
-                    <div class="input-group">
-                        <label for="newPassword">Nova Senha</label>
-                        <input type="password" id="newPassword" name="newPassword" required>
-                    </div>
-                    <div class="input-group">
-                        <label for="confirmPassword">Confirmar Nova Senha</label>
-                        <input type="password" id="confirmPassword" name="confirmPassword" required>
-                    </div>
-                    <div class="btn-group">
-                        <button type="button" class="btn btn-secondary" onclick="resetPasswordForm()">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">🔐 Alterar Senha</button>
-                    </div>
-                </form>
-            </section>
-
-            <!-- Estatísticas -->
-            <section class="profile-section">
-                <h2 class="section-title">📊 Suas Estatísticas</h2>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <span class="stat-number" id="userLoginCount">0</span>
-                        <span class="stat-label">Total de Logins</span>
-                    </div>
-                    <div class="stat-card">
-                        <span class="stat-number" id="userLastLogin">--</span>
-                        <span class="stat-label">Último Login</span>
-                    </div>
-                    <div class="stat-card">
-                        <span class="stat-number" id="userAccountAge">0</span>
-                        <span class="stat-label">Dias de Conta</span>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Atividade Recente -->
-            <section class="profile-section">
-                <h2 class="section-title">🕒 Atividade Recente</h2>
-                <div id="activityList">
-                    <div class="activity-item">
-                        <div class="activity-icon">🔑</div>
-                        <div class="activity-content">
-                            <div class="activity-title">Login realizado</div>
-                            <div class="activity-time">Agora mesmo</div>
-                        </div>
-                    </div>
-                    <div class="activity-item">
-                        <div class="activity-icon">👤</div>
-                        <div class="activity-content">
-                            <div class="activity-title">Perfil acessado</div>
-                            <div class="activity-time">Há 2 minutos</div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </main>
+        </div>
     </div>
 
+    <!-- Modal: Delete Account Confirmation -->
+    <div class="modal fade" id="deleteAccountModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger bg-opacity-25">
+                    <h5 class="modal-title text-danger">
+                        <i class="me-2">⚠️</i>Confirmar Exclusão de Conta
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <strong>ATENÇÃO!</strong> Esta ação é irreversível!
+                    </div>
+                    <p>Você está prestes a excluir permanentemente sua conta. Todos os seus dados serão perdidos.</p>
+                    <p>Digite <strong>EXCLUIR</strong> para confirmar:</p>
+                    <input type="text" class="form-control" id="deleteConfirmation" 
+                           placeholder="Digite EXCLUIR para confirmar">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn" 
+                            onclick="deleteAccount()" disabled>
+                        🗑️ Excluir Conta Permanentemente
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer"></div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Scripts -->
     <script src="js/utils/api.js"></script>
     <script src="js/utils/auth.js"></script>
     <script src="js/pages/profile.js"></script>
+
+    <script>
+        // ===============================================
+        // PROFILE PAGE LOGIC
+        // ===============================================
+
+        class ProfilePage {
+            constructor() {
+                this.currentUser = null;
+                this.init();
+            }
+
+            async init() {
+                // Protect page
+                if (!window.authManager) {
+                    console.error('AuthManager not available');
+                    return;
+                }
+
+                const isAuthenticated = await window.authManager.requireAuth();
+                if (!isAuthenticated) return;
+
+                // Load user data
+                this.currentUser = window.authManager.getCurrentUser();
+                this.loadUserProfile();
+                this.setupEventListeners();
+                this.loadUserActivity();
+            }
+
+            setupEventListeners() {
+                // Personal form
+                document.getElementById('personalForm').addEventListener('submit', (e) => this.updatePersonalInfo(e));
+                
+                // Password form
+                document.getElementById('passwordForm').addEventListener('submit', (e) => this.changePassword(e));
+                
+                // Password confirmation
+                document.getElementById('confirmPassword').addEventListener('input', () => this.validatePasswordMatch());
+                
+                // Delete account confirmation
+                document.getElementById('deleteConfirmation').addEventListener('input', (e) => {
+                    const confirmBtn = document.getElementById('confirmDeleteBtn');
+                    confirmBtn.disabled = e.target.value !== 'EXCLUIR';
+                });
+            }
+
+            loadUserProfile() {
+                if (!this.currentUser) return;
+
+                // Header info
+                document.getElementById('profilePageTitle').textContent = `Perfil de ${this.currentUser.username}`;
+                document.getElementById('profileName').textContent = this.currentUser.username || 'N/A';
+                document.getElementById('profileEmail').textContent = this.currentUser.email || 'N/A';
+                
+                // Role badge
+                const roleElement = document.getElementById('profileRole');
+                roleElement.textContent = this.currentUser.permissao || 'Visitante';
+                roleElement.className = `badge fs-6 me-2 badge-permission-${(this.currentUser.permissao || 'visitante').toLowerCase()}`;
+                
+                // Avatar (initials)
+                const avatar = window.authManager.getUserAvatar();
+                document.getElementById('profileAvatar').textContent = avatar;
+
+                // Personal form
+                document.getElementById('editUsername').value = this.currentUser.username || '';
+                document.getElementById('editEmail').value = this.currentUser.email || '';
+                document.getElementById('editFuncao').value = this.currentUser.funcao || '';
+                document.getElementById('editPermissao').value = this.currentUser.permissao || '';
+                document.getElementById('editBio').value = this.currentUser.bio || '';
+
+                // Security info
+                this.loadSecurityInfo();
+            }
+
+            loadSecurityInfo() {
+                // Mock data - in real app, get from API
+                const now = new Date();
+                document.getElementById('lastLogin').textContent = now.toLocaleString('pt-BR');
+                document.getElementById('lastLoginIP').textContent = '192.168.1.100';
+                
+                if (this.currentUser.created_at) {
+                    const createdDate = new Date(this.currentUser.created_at);
+                    document.getElementById('accountCreated').textContent = createdDate.toLocaleDateString('pt-BR');
+                } else {
+                    document.getElementById('accountCreated').textContent = 'N/A';
+                }
+            }
+
+            async updatePersonalInfo(e) {
+                e.preventDefault();
+                
+                const button = e.target.querySelector('button[type="submit"]');
+                const spinner = document.getElementById('personalSpinner');
+                const formData = new FormData(e.target);
+                
+                try {
+                    button.disabled = true;
+                    spinner.classList.remove('d-none');
+                    
+                    const userData = {
+                        username: formData.get('username'),
+                        email: formData.get('email'),
+                        funcao: formData.get('funcao') || null,
+                        bio: formData.get('bio') || null
+                    };
+
+                    const result = await window.conductorAPI.updateUser(this.currentUser.id, userData);
+                    
+                    if (result) {
+                        // Update local user data
+                        Object.assign(this.currentUser, userData);
+                        localStorage.setItem('conductor_user', JSON.stringify(this.currentUser));
+                        
+                        this.showMessage('personalMessage', 'Perfil atualizado com sucesso!', 'success');
+                        this.loadUserProfile(); // Refresh display
+                        this.showToast('Perfil atualizado com sucesso!', 'success');
+                    }
+                    
+                } catch (error) {
+                    console.error('Erro ao atualizar perfil:', error);
+                    this.showMessage('personalMessage', 'Erro ao atualizar perfil: ' + error.message, 'danger');
+                } finally {
+                    button.disabled = false;
+                    spinner.classList.add('d-none');
+                }
+            }
+
+            async changePassword(e) {
+                e.preventDefault();
+                
+                if (!this.validatePasswordMatch()) {
+                    this.showMessage('passwordMessage', 'As senhas não coincidem', 'warning');
+                    return;
+                }
+                
+                const button = e.target.querySelector('button[type="submit"]');
+                const spinner = document.getElementById('passwordSpinner');
+                const formData = new FormData(e.target);
+                
+                try {
+                    button.disabled = true;
+                    spinner.classList.remove('d-none');
+                    
+                    const passwordData = {
+                        currentPassword: formData.get('currentPassword'),
+                        newPassword: formData.get('newPassword')
+                    };
+
+                    // Call API to change password
+                    await window.conductorAPI.put(`/users/${this.currentUser.id}/password`, passwordData);
+                    
+                    this.showMessage('passwordMessage', 'Senha alterada com sucesso!', 'success');
+                    this.showToast('Senha alterada com sucesso!', 'success');
+                    document.getElementById('passwordForm').reset();
+                    
+                } catch (error) {
+                    console.error('Erro ao alterar senha:', error);
+                    this.showMessage('passwordMessage', 'Erro ao alterar senha: ' + error.message, 'danger');
+                } finally {
+                    button.disabled = false;
+                    spinner.classList.add('d-none');
+                }
+            }
+
+            validatePasswordMatch() {
+                const newPassword = document.getElementById('newPassword').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                const confirmInput = document.getElementById('confirmPassword');
+                
+                if (confirmPassword && newPassword !== confirmPassword) {
+                    confirmInput.classList.add('is-invalid');
+                    return false;
+                } else {
+                    confirmInput.classList.remove('is-invalid');
+                    if (confirmPassword) confirmInput.classList.add('is-valid');
+                    return true;
+                }
+            }
+
+            async loadUserActivity() {
+                try {
+                    // Mock activity data - in real app, get from API
+                    const activities = [
+                        {
+                            timestamp: new Date(Date.now() - 3600000).toISOString(),
+                            action: 'Login realizado',
+                            details: 'Acesso ao sistema',
+                            ip: '192.168.1.100'
+                        },
+                        {
+                            timestamp: new Date(Date.now() - 7200000).toISOString(),
+                            action: 'Perfil atualizado',
+                            details: 'Informações pessoais alteradas',
+                            ip: '192.168.1.100'
+                        },
+                        {
+                            timestamp: new Date(Date.now() - 86400000).toISOString(),
+                            action: 'Login realizado',
+                            details: 'Acesso ao sistema',
+                            ip: '192.168.1.99'
+                        }
+                    ];
+
+                    this.renderActivityTable(activities);
+                    
+                } catch (error) {
+                    console.error('Erro ao carregar atividade:', error);
+                    this.renderActivityTable([]);
+                }
+            }
+
+            renderActivityTable(activities) {
+                const tbody = document.getElementById('activityTableBody');
+                tbody.innerHTML = '';
+
+                if (!activities || activities.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-4">
+                                Nenhuma atividade encontrada
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                activities.forEach(activity => {
+                    const row = document.createElement('tr');
+                    const timestamp = new Date(activity.timestamp).toLocaleString('pt-BR');
+                    
+                    row.innerHTML = `
+                        <td>${timestamp}</td>
+                        <td><strong>${activity.action}</strong></td>
+                        <td>${activity.details}</td>
+                        <td><code>${activity.ip}</code></td>
+                    `;
+                    
+                    tbody.appendChild(row);
+                });
+            }
+
+            resetPersonalForm() {
+                this.loadUserProfile();
+                this.hideMessage('personalMessage');
+            }
+
+            resetPasswordForm() {
+                document.getElementById('passwordForm').reset();
+                this.hideMessage('passwordMessage');
+                document.getElementById('confirmPassword').classList.remove('is-invalid', 'is-valid');
+            }
+
+            async deleteAccount() {
+                try {
+                    await window.conductorAPI.deleteUser(this.currentUser.id);
+                    this.showToast('Conta excluída com sucesso', 'success');
+                    
+                    // Logout and redirect
+                    setTimeout(() => {
+                        window.authManager.logout();
+                    }, 2000);
+                    
+                } catch (error) {
+                    console.error('Erro ao excluir conta:', error);
+                    this.showToast('Erro ao excluir conta: ' + error.message, 'danger');
+                }
+            }
+
+            showMessage(elementId, message, type) {
+                const element = document.getElementById(elementId);
+                element.className = `alert alert-${type}`;
+                element.textContent = message;
+                element.classList.remove('d-none');
+            }
+
+            hideMessage(elementId) {
+                const element = document.getElementById(elementId);
+                element.classList.add('d-none');
+            }
+
+            showToast(message, type) {
+                const toastHtml = `
+                    <div class="toast align-items-center text-white bg-${type} border-0" role="alert">
+                        <div class="d-flex">
+                            <div class="toast-body">
+                                ${this.getToastIcon(type)} ${message}
+                            </div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                        </div>
+                    </div>
+                `;
+                
+                const toastContainer = document.getElementById('toastContainer');
+                toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+                
+                const toastElement = toastContainer.lastElementChild;
+                const toast = new bootstrap.Toast(toastElement);
+                toast.show();
+                
+                toastElement.addEventListener('hidden.bs.toast', () => {
+                    toastElement.remove();
+                });
+            }
+
+            getToastIcon(type) {
+                const icons = {
+                    'success': '✅',
+                    'danger': '❌',
+                    'warning': '⚠️',
+                    'info': 'ℹ️'
+                };
+                return icons[type] || 'ℹ️';
+            }
+        }
+
+        // Global functions
+        function goBack() {
+            window.location.href = 'dashboard.html';
+        }
+
+        function loadUserActivity() {
+            if (window.profilePage) {
+                window.profilePage.loadUserActivity();
+            }
+        }
+
+        function deleteAccount() {
+            if (window.profilePage) {
+                window.profilePage.deleteAccount();
+            }
+        }
+
+        function resetPersonalForm() {
+            if (window.profilePage) {
+                window.profilePage.resetPersonalForm();
+            }
+        }
+
+        function resetPasswordForm() {
+            if (window.profilePage) {
+                window.profilePage.resetPasswordForm();
+            }
+        }
+
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            window.profilePage = new ProfilePage();
+        });
+    </script>
 </body>
 </html>
