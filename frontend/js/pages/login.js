@@ -1,4 +1,8 @@
-// LOGIN PAGE - CONDUCTOR (CORRIGIDO)
+// ===============================================
+// LOGIN PAGE - CONDUCTOR (ORIGINAL FUNCIONANDO)
+// frontend/js/pages/login.js
+// ===============================================
+
 class LoginPage {
     constructor() {
         this.currentTab = 'login';
@@ -63,7 +67,7 @@ class LoginPage {
         }
     }
 
-    // Handle Login
+    // Handle Login - ORIGINAL
     async handleLogin(e) {
         e.preventDefault();
         
@@ -104,7 +108,7 @@ class LoginPage {
         }
     }
 
-    // Handle Register
+    // Handle Register - ORIGINAL
     async handleRegister(e) {
         e.preventDefault();
         
@@ -216,65 +220,31 @@ class LoginPage {
 
     showMessage(containerId, message, type) {
         const container = document.getElementById(containerId);
-        if (!container) {
-            console.warn(`Container ${containerId} não encontrado, usando toast`);
-            this.showToast(message, type);
-            return;
-        }
+        if (!container) return;
         
-        // Configurar classes do alerta
-        container.className = `alert alert-${type}`;
-        container.textContent = this.getMessageIcon(type) + ' ' + message;
-        container.classList.remove('d-none');
-        
-        // Auto-hide success messages
-        if (type === 'success') {
-            setTimeout(() => {
-                container.classList.add('d-none');
-            }, 3000);
-        }
-    }
+        const alertClass = {
+            'success': 'alert-success',
+            'danger': 'alert-danger',
+            'warning': 'alert-warning',
+            'info': 'alert-info'
+        };
 
-    showToast(message, type) {
-        const toastHtml = `
-            <div class="toast align-items-center text-white bg-${type} border-0" role="alert">
-                <div class="d-flex">
-                    <div class="toast-body">
-                        ${this.getMessageIcon(type)} ${message}
-                    </div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-                </div>
+        container.innerHTML = `
+            <div class="alert ${alertClass[type]} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         `;
-        
-        let toastContainer = document.getElementById('toastContainer');
-        if (!toastContainer) {
-            toastContainer = document.createElement('div');
-            toastContainer.id = 'toastContainer';
-            toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
-            document.body.appendChild(toastContainer);
-        }
-        
-        toastContainer.insertAdjacentHTML('beforeend', toastHtml);
-        
-        const toastElement = toastContainer.lastElementChild;
-        const toast = new bootstrap.Toast(toastElement);
-        toast.show();
-        
-        // Remove from DOM after hidden
-        toastElement.addEventListener('hidden.bs.toast', () => {
-            toastElement.remove();
-        });
-    }
 
-    getMessageIcon(type) {
-        const icons = {
-            'success': '✅',
-            'danger': '❌',
-            'warning': '⚠️',
-            'info': 'ℹ️'
-        };
-        return icons[type] || 'ℹ️';
+        // Auto-hide after 5 seconds (except for errors)
+        if (type !== 'danger') {
+            setTimeout(() => {
+                const alert = container.querySelector('.alert');
+                if (alert) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
     }
 
     // Método para trocar tabs (se necessário)
@@ -291,7 +261,7 @@ class LoginPage {
 }
 
 // ===============================================
-// INICIALIZAÇÃO
+// INICIALIZAÇÃO ORIGINAL
 // ===============================================
 
 // Aguardar DOM e dependências

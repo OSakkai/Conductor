@@ -1,11 +1,44 @@
-// API UTILS - CONDUCTOR (ENDPOINTS CORRIGIDOS)
+// ===============================================
+// CONDUCTOR - API UTILS RESTAURADO (FUNCIONANDO)
+// frontend/js/utils/api.js
+// ===============================================
+
 class ConductorAPI {
     constructor() {
         this.baseURL = '/api';
         this.token = localStorage.getItem('conductor_token');
+        console.log('🌐 ConductorAPI inicializado:', this.baseURL);
     }
 
-    // Headers padrão
+    // ===============================================
+    // GERENCIAMENTO DE TOKEN
+    // ===============================================
+
+    setToken(token) {
+        this.token = token;
+        localStorage.setItem('conductor_token', token);
+        console.log('🔑 Token salvo');
+    }
+
+    removeToken() {
+        this.token = null;
+        localStorage.removeItem('conductor_token');
+        localStorage.removeItem('conductor_user');
+        console.log('🧹 Token removido');
+    }
+
+    hasToken() {
+        return !!this.token;
+    }
+
+    isAuthenticated() {
+        return !!this.token;
+    }
+
+    // ===============================================
+    // HEADERS E CONFIGURAÇÃO
+    // ===============================================
+
     getHeaders(includeAuth = true) {
         const headers = {
             'Content-Type': 'application/json',
@@ -18,7 +51,10 @@ class ConductorAPI {
         return headers;
     }
 
-    // Fazer requisição genérica
+    // ===============================================
+    // MÉTODOS HTTP BÁSICOS
+    // ===============================================
+
     async request(endpoint, options = {}) {
         const url = `${this.baseURL}${endpoint}`;
         
@@ -28,10 +64,12 @@ class ConductorAPI {
         };
 
         try {
+            console.log(`🌐 ${config.method || 'GET'} ${url}`);
             const response = await fetch(url, config);
             
-            // Se token expirou, redirecionar para login
+            // Se token expirou, fazer logout
             if (response.status === 401) {
+                console.log('❌ Token expirado - fazendo logout');
                 this.logout();
                 return null;
             }
@@ -42,14 +80,14 @@ class ConductorAPI {
                 throw new Error(data.message || `HTTP ${response.status}`);
             }
 
+            console.log(`✅ ${config.method || 'GET'} ${url} - Sucesso`);
             return data;
         } catch (error) {
-            console.error('API Error:', error);
+            console.error(`❌ ${config.method || 'GET'} ${url} - Erro:`, error);
             throw error;
         }
     }
 
-    // Métodos HTTP específicos
     async get(endpoint, options = {}) {
         return this.request(endpoint, {
             method: 'GET',
@@ -81,47 +119,76 @@ class ConductorAPI {
     }
 
     // ===============================================
-    // MÉTODOS DE AUTENTICAÇÃO
+    // MÉTODOS DE AUTENTICAÇÃO (ORIGINAL FUNCIONANDO)
     // ===============================================
 
     async login(credentials) {
-        // ✅ CORREÇÃO: Backend espera nome_usuario, não username
-        const loginData = {
-            nome_usuario: credentials.username,
-            senha: credentials.password
-        };
-        
-        const response = await this.post('/auth/login', loginData, { auth: false });
-        
-        if (response && response.access_token) {
-            this.setToken(response.access_token);
-            localStorage.setItem('conductor_user', JSON.stringify(response.user));
+        try {
+            console.log('🔐 Tentando login...');
+            
+            // ✅ ORIGINAL - Backend espera nome_usuario
+            const loginData = {
+                nome_usuario: credentials.username,
+                senha: credentials.password
+            };
+            
+            const response = await this.post('/auth/login', loginData, { auth: false });
+            
+            // ✅ ORIGINAL - Backend retorna { access_token, user }
+            if (response && response.access_token) {
+                this.setToken(response.access_token);
+                localStorage.setItem('conductor_user', JSON.stringify(response.user));
+                
+                console.log('✅ Login realizado com sucesso:', response.user.nome_usuario);
+                return response;
+            } else {
+                throw new Error('Falha no login');
+            }
+        } catch (error) {
+            console.error('❌ Erro no login:', error);
+            throw error;
         }
-        
-        return response;
     }
 
     async register(userData) {
-        // ✅ CORREÇÃO: Backend espera nome_usuario, não username
-        const registerData = {
-            nome_usuario: userData.username,
-            email: userData.email,
-            senha: userData.password,
-            funcao: userData.funcao || '',
-            chave_acesso: userData.accessKey || null
-        };
-        
-        return this.post('/auth/register', registerData, { auth: false });
+        try {
+            console.log('📝 Tentando registrar usuário...');
+            
+            // ✅ ORIGINAL - Campos corretos do backend
+            const registerData = {
+                nome_usuario: userData.username,
+                email: userData.email,
+                senha: userData.password,
+                funcao: userData.funcao || 'Estagiario',
+                celular: userData.phone || null,
+                chave_acesso: userData.accessKey || null
+            };
+            
+            const response = await this.post('/auth/register', registerData, { auth: false });
+            console.log('✅ Registro realizado:', response);
+            return response;
+        } catch (error) {
+            console.error('❌ Erro no registro:', error);
+            throw error;
+        }
     }
 
     async getProfile() {
-        return this.get('/auth/profile');
+        try {
+            const response = await this.get('/auth/profile');
+            return response;
+        } catch (error) {
+            console.error('❌ Erro ao obter perfil:', error);
+            return null;
+        }
     }
 
     async validateToken() {
         try {
-            return await this.get('/auth/profile');
+            const profile = await this.getProfile();
+            return profile?.user || null;
         } catch (error) {
+            console.error('❌ Token inválido:', error);
             return null;
         }
     }
@@ -131,129 +198,198 @@ class ConductorAPI {
     // ===============================================
 
     async getUsers() {
-        return this.get('/users');
+        const response = await this.get('/users');
+        return response?.success ? response.data : response || [];
     }
 
     async getUser(id) {
-        return this.get(`/users/${id}`);
+        const response = await this.get(`/users/${id}`);
+        return response?.success ? response.data : response || null;
     }
 
     async createUser(userData) {
-        // ✅ CORREÇÃO: Backend espera nome_usuario, não username
-        const createData = {
-            nome_usuario: userData.username || userData.nome_usuario,
+        const userPayload = {
+            nome_usuario: userData.username,
             email: userData.email,
-            senha: userData.password || userData.senha,
+            senha: userData.password,
+            funcao: userData.funcao,
             permissao: userData.permissao,
-            funcao: userData.funcao || null
+            celular: userData.phone || null
         };
         
-        return this.post('/users', createData);
+        const response = await this.post('/users', userPayload);
+        return response;
     }
 
     async updateUser(id, userData) {
-        // ✅ CORREÇÃO: Backend espera nome_usuario, não username
-        const updateData = {
-            nome_usuario: userData.username || userData.nome_usuario,
+        const userPayload = {
+            nome_usuario: userData.username,
             email: userData.email,
+            funcao: userData.funcao,
             permissao: userData.permissao,
-            funcao: userData.funcao || null,
-            status: userData.status
+            celular: userData.phone || null
         };
         
-        // Remove campos undefined
-        Object.keys(updateData).forEach(key => {
-            if (updateData[key] === undefined) {
-                delete updateData[key];
-            }
-        });
-        
-        return this.put(`/users/${id}`, updateData);
+        const response = await this.put(`/users/${id}`, userPayload);
+        return response;
     }
 
     async deleteUser(id) {
-        return this.delete(`/users/${id}`);
+        const response = await this.delete(`/users/${id}`);
+        return response;
+    }
+
+    async toggleUserStatus(id) {
+        const response = await this.put(`/users/${id}/toggle-status`);
+        return response;
     }
 
     // ===============================================
-    // MÉTODOS DE CHAVES (CORRIGIDOS)
+    // MÉTODOS DE CHAVES
     // ===============================================
 
     async getKeys() {
-        return this.get('/chaves');
-    }
-
-    async getKey(id) {
-        return this.get(`/chaves/${id}`);
-    }
-
-    async createKey(keyData) {
-        // ✅ CORREÇÃO: Campos corretos conforme backend
-        const createData = {
-            tipo: keyData.tipo,
-            permissao: keyData.permissao,
-            descricao: keyData.descricao || null,
-            data_expiracao: keyData.data_expiracao || null,
-            usos_maximo: keyData.usos_maximo || null
-        };
-        
-        return this.post('/chaves', createData);
-    }
-
-    async updateKey(id, keyData) {
-        return this.put(`/chaves/${id}`, keyData);
-    }
-
-    async deleteKey(id) {
-        return this.delete(`/chaves/${id}`);
-    }
-
-    // ===============================================
-    // MÉTODOS DE SISTEMA (CORRIGIDOS)
-    // ===============================================
-
-    async getSystemStatus() {
         try {
-            // ✅ Como endpoint não existe, retornar dados mock
-            return {
-                status: 'online',
-                uptime: '99.9%',
-                database: 'connected',
-                version: '1.0.0'
-            };
+            const response = await this.get('/chaves');
+            return response?.success ? response.data : response || [];
         } catch (error) {
-            console.warn('Sistema de status não disponível:', error);
-            return {
-                status: 'unknown',
-                uptime: 'N/A',
-                database: 'unknown',
-                version: 'N/A'
-            };
+            console.warn('❌ Erro ao carregar chaves:', error);
+            return [];
         }
     }
 
+    async createKey(keyData) {
+        const response = await this.post('/chaves', keyData);
+        return response;
+    }
+
+    async updateKey(id, keyData) {
+        const response = await this.put(`/chaves/${id}`, keyData);
+        return response;
+    }
+
+    async deleteKey(id) {
+        const response = await this.delete(`/chaves/${id}`);
+        return response;
+    }
+
+    async validateKey(key) {
+        const response = await this.post('/chaves/validate', { chave: key }, { auth: false });
+        return response;
+    }
+
+    // ===============================================
+    // MÉTODOS DE LOGS
+    // ===============================================
+
+    async getLogs() {
+        try {
+            const response = await this.get('/logs');
+            return response?.success ? response.data : response || [];
+        } catch (error) {
+            console.warn('❌ Erro ao carregar logs:', error);
+            return [];
+        }
+    }
+
+    async createLog(logData) {
+        try {
+            const response = await this.post('/logs', logData);
+            return response;
+        } catch (error) {
+            console.error('❌ Erro ao criar log:', error);
+            return null;
+        }
+    }
+
+    // ===============================================
+    // MÉTODOS DE SISTEMA
+    // ===============================================
+
     async getSystemStats() {
         try {
-            // ✅ Como endpoint não existe, calcular stats básicos
-            const [users, keys] = await Promise.all([
-                this.getUsers().catch(() => ({ data: [] })),
-                this.getKeys().catch(() => ({ data: [] }))
-            ]);
+            console.log('📊 Carregando estatísticas do sistema...');
             
-            const userData = users.data || users || [];
-            const keyData = keys.data || keys || [];
+            // 🔍 DEBUG - Vamos ver exatamente o que a API retorna
+            const usersResponse = await this.getUsers();
+            const keysResponse = await this.getKeys();
             
-            return {
-                totalUsers: userData.length,
-                activeUsers: userData.filter(u => u.status === 'ativo').length,
-                totalKeys: keyData.length,
-                activeKeys: keyData.filter(k => k.status === 'ativa').length,
-                expiredKeys: keyData.filter(k => k.status === 'expirada').length,
+            console.log('🔍 DEBUG usersResponse:', usersResponse);
+            console.log('🔍 DEBUG keysResponse:', keysResponse);
+            console.log('🔍 Type usersResponse:', typeof usersResponse);
+            console.log('🔍 Is Array usersResponse:', Array.isArray(usersResponse));
+            
+            // ✅ TENTAR MÚLTIPLAS FORMAS DE EXTRAIR OS DADOS
+            let users = [];
+            let keys = [];
+            
+            // Para usuários
+            if (Array.isArray(usersResponse)) {
+                users = usersResponse;
+                console.log('✅ usersResponse é array direto');
+            } else if (usersResponse?.data && Array.isArray(usersResponse.data)) {
+                users = usersResponse.data;
+                console.log('✅ usersResponse.data é array');
+            } else if (usersResponse?.success && usersResponse.data && Array.isArray(usersResponse.data)) {
+                users = usersResponse.data;
+                console.log('✅ usersResponse.success.data é array');
+            } else {
+                console.warn('⚠️ Formato inesperado de usuários, usando array vazio');
+                users = [];
+            }
+            
+            // Para chaves
+            if (Array.isArray(keysResponse)) {
+                keys = keysResponse;
+                console.log('✅ keysResponse é array direto');
+            } else if (keysResponse?.data && Array.isArray(keysResponse.data)) {
+                keys = keysResponse.data;
+                console.log('✅ keysResponse.data é array');
+            } else if (keysResponse?.success && keysResponse.data && Array.isArray(keysResponse.data)) {
+                keys = keysResponse.data;
+                console.log('✅ keysResponse.success.data é array');
+            } else {
+                console.warn('⚠️ Formato inesperado de chaves, usando array vazio');
+                keys = [];
+            }
+            
+            console.log('📊 Arrays finais:', { 
+                usersCount: users.length, 
+                keysCount: keys.length,
+                sampleUser: users[0],
+                sampleKey: keys[0]
+            });
+            
+            // ✅ GARANTIR QUE SÃO ARRAYS ANTES DE FILTRAR
+            if (!Array.isArray(users)) {
+                console.error('❌ users não é array:', users);
+                users = [];
+            }
+            
+            if (!Array.isArray(keys)) {
+                console.error('❌ keys não é array:', keys);
+                keys = [];
+            }
+            
+            // ✅ CALCULAR ESTATÍSTICAS COM FALLBACKS
+            const stats = {
+                totalUsers: users.length,
+                activeUsers: users.filter(u => u?.status === 'Ativo').length,
+                totalKeys: keys.length,
+                activeKeys: keys.filter(k => k?.status === 'ativa').length,
+                expiredKeys: keys.filter(k => k?.status === 'expirada').length,
                 onlineUsers: 1,
-                uptime: '99.9%'
+                uptime: 'Sistema Online'
             };
+            
+            console.log('📊 Estatísticas calculadas:', stats);
+            return stats;
+            
         } catch (error) {
-            console.warn('Estatísticas do sistema não disponíveis:', error);
+            console.error('❌ ERRO COMPLETO em getSystemStats:', error);
+            console.error('❌ Stack trace:', error.stack);
+            
+            // ✅ RETORNO SEGURO EM CASO DE ERRO
             return {
                 totalUsers: 0,
                 activeUsers: 0,
@@ -261,78 +397,29 @@ class ConductorAPI {
                 activeKeys: 0,
                 expiredKeys: 0,
                 onlineUsers: 1,
-                uptime: 'N/A'
+                uptime: 'Erro'
             };
         }
     }
 
-    async getSystemLogs() {
-        try {
-            // ✅ Como endpoint não existe, retornar logs mock
-            const currentUser = this.getCurrentUser();
-            const now = new Date();
-            
-            return [
-                {
-                    id: 1,
-                    timestamp: new Date(now - 3600000).toISOString(),
-                    type: 'auth',
-                    user: currentUser?.nome_usuario || 'admin',
-                    action: 'login',
-                    details: 'Login realizado com sucesso',
-                    ip: '192.168.1.100'
-                },
-                {
-                    id: 2,
-                    timestamp: new Date(now - 7200000).toISOString(),
-                    type: 'system',
-                    user: 'system',
-                    action: 'startup',
-                    details: 'Sistema inicializado',
-                    ip: 'localhost'
-                }
-            ];
-        } catch (error) {
-            console.warn('Logs do sistema não disponíveis:', error);
-            return [];
-        }
-    }
-
     // ===============================================
-    // GERENCIAMENTO DE TOKEN
+    // MÉTODOS AUXILIARES
     // ===============================================
 
-    setToken(token) {
-        this.token = token;
-        localStorage.setItem('conductor_token', token);
-    }
-
-    removeToken() {
-        this.token = null;
-        localStorage.removeItem('conductor_token');
-        localStorage.removeItem('conductor_user');
-    }
-
-    // Logout
     logout() {
         this.removeToken();
-        window.location.href = 'login.html';
+        window.location.href = '/login.html';
     }
 
-    // Verificar se está autenticado
-    isAuthenticated() {
-        return !!this.token;
-    }
-
-    // Obter usuário atual
     getCurrentUser() {
-        const userStr = localStorage.getItem('conductor_user');
-        return userStr ? JSON.parse(userStr) : null;
+        try {
+            const userStr = localStorage.getItem('conductor_user');
+            return userStr ? JSON.parse(userStr) : null;
+        } catch (error) {
+            console.error('❌ Erro ao obter usuário atual:', error);
+            return null;
+        }
     }
-
-    // ===============================================
-    // VERIFICAÇÕES DE PERMISSÃO
-    // ===============================================
 
     hasPermission(requiredPermission) {
         const user = this.getCurrentUser();
@@ -345,23 +432,13 @@ class ConductorAPI {
         return userLevel >= requiredLevel;
     }
 
-    // Verificar se é admin
-    isAdmin() {
-        return this.hasPermission('Administrador');
-    }
-
-    // Verificar se é desenvolvedor
-    isDeveloper() {
-        return this.hasPermission('Desenvolvedor');
-    }
-
     // ===============================================
-    // MÉTODOS DE DEBUG E TESTE
+    // MÉTODOS DE DEBUG
     // ===============================================
 
     async testConnection() {
         try {
-            await this.get('/auth/health');
+            const response = await this.get('/users');
             console.log('✅ Conexão com API funcionando');
             return true;
         } catch (error) {
@@ -370,38 +447,11 @@ class ConductorAPI {
         }
     }
 
-    async debugAPI() {
-        console.group('🔍 Debug da API');
-        console.log('Base URL:', this.baseURL);
-        console.log('Token presente:', !!this.token);
-        console.log('Usuário logado:', this.getCurrentUser());
-        
-        // Testar endpoints principais
-        const endpoints = [
-            '/auth/health',
-            '/users',
-            '/chaves'
-        ];
-        
-        for (const endpoint of endpoints) {
-            try {
-                await this.get(endpoint);
-                console.log(`✅ ${endpoint} - OK`);
-            } catch (error) {
-                console.log(`❌ ${endpoint} - ${error.message}`);
-            }
-        }
-        
-        console.groupEnd();
-    }
-}
+} // FIM DA CLASSE ConductorAPI
 
-// Instância global da API
+// ===============================================
+// INICIALIZAÇÃO GLOBAL
+// ===============================================
+
 window.conductorAPI = new ConductorAPI();
-
-// Debug: Testar conexão na inicialização (desenvolvimento)
-if (window.location.hostname === 'localhost') {
-    window.conductorAPI.testConnection();
-}
-
-console.log('✅ ConductorAPI carregado e disponível globalmente');
+console.log('🌐 CONDUCTOR - API Manager (ORIGINAL) carregado!');

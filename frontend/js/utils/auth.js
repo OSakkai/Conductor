@@ -12,6 +12,7 @@ class AuthManager {
         this.api = window.conductorAPI;
         this.redirectAfterLogin = 'dashboard.html';
         this.currentUser = null;
+        this.authChangeCallback = null;
         
         // Carregar usuário do localStorage
         this.loadUserFromStorage();
@@ -34,6 +35,7 @@ class AuthManager {
             const userStr = localStorage.getItem('conductor_user');
             if (userStr) {
                 this.currentUser = JSON.parse(userStr);
+                console.log('👤 Usuário carregado:', this.currentUser.nome_usuario);
             }
         } catch (error) {
             console.error('❌ Erro ao carregar usuário do localStorage:', error);
@@ -87,6 +89,13 @@ class AuthManager {
     async requirePermission(permission) {
         const isAuth = await this.requireAuth();
         if (!isAuth) return false;
+
+        // ✅ SE FOR VISITANTE E PEDIR 'Usuario', PERMITIR ACESSO
+        const user = this.getCurrentUser();
+        if (user?.permissao === 'Visitante' && permission === 'Usuario') {
+            console.log('🔓 Visitante acessando dashboard - permitido');
+            return true;
+        }
 
         if (!this.hasPermission(permission)) {
             this.showAccessDenied();
@@ -160,7 +169,7 @@ class AuthManager {
     // Mostrar acesso negado
     showAccessDenied() {
         const user = this.getCurrentUser();
-        const userName = user ? user.username : 'Usuário';
+        const userName = user ? user.nome_usuario : 'Usuário';
         const userPermission = user ? user.permissao : 'Desconhecida';
         
         alert(`❌ ACESSO NEGADO!\n\nUsuário: ${userName}\nPermissão: ${userPermission}\n\nVocê não tem permissão para acessar esta página.`);
@@ -210,106 +219,58 @@ class AuthManager {
             }, minutes * 60 * 1000);
         };
 
-        // Eventos que resetam o timer
-        const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
-        events.forEach(event => {
+        // Eventos para detectar atividade
+        ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(event => {
             document.addEventListener(event, resetTimer, true);
         });
 
+        // Iniciar timer
         resetTimer();
-        console.log(`⏰ Auto-logout configurado para ${minutes} minutos de inatividade`);
     }
 
-    // Logout do sistema
+    // Logout
     logout() {
-        console.log('🚪 Realizando logout...');
-        
-        // Limpar dados locais
+        this.api.removeToken();
         this.currentUser = null;
-        
-        // Usar método da API para logout
-        this.api.logout();
+        this.triggerAuthChange();
+        window.location.href = 'login.html';
     }
 
     // ===============================================
-    // UTILITÁRIOS DE USUÁRIO
+    // MÉTODOS DE UI E AVATAR - OS QUE ESTAVAM FALTANDO
     // ===============================================
 
-    // Formatar nome de exibição
-    getDisplayName() {
-        const user = this.getCurrentUser();
-        if (!user) return 'Usuário';
-        
-        return user.username || user.email || 'Usuário';
-    }
-
-    // Obter avatar/iniciais do usuário
+    // Obter avatar do usuário (iniciais)
     getUserAvatar() {
         const user = this.getCurrentUser();
-        if (!user) return '👤';
+        if (!user || !user.nome_usuario) return '?';
         
-        // Se tiver nome, usar iniciais
-        if (user.username) {
-            const initials = user.username
-                .split(' ')
-                .map(name => name.charAt(0).toUpperCase())
-                .join('')
-                .substring(0, 2);
-            return initials;
-        }
-        
-        return '👤';
+        return user.nome_usuario
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase())
+            .join('')
+            .substring(0, 2);
     }
 
-    // Obter cor do badge de permissão
-    getPermissionColor() {
-        const user = this.getCurrentUser();
-        if (!user) return 'gray';
-        
-        const colors = {
-            'Visitante': 'gray',
-            'Usuario': 'blue',
-            'Operador': 'green',
-            'Administrador': 'orange',
-            'Desenvolvedor': 'purple'
+    // Obter ícone da permissão
+    getPermissionIcon(permission) {
+        const icons = {
+            'Visitante': '👁️',
+            'Usuario': '👤',
+            'Operador': '🔧',
+            'Administrador': '⚙️',
+            'Desenvolvedor': '👨‍💻'
         };
-        
-        return colors[user.permissao] || 'gray';
+        return icons[permission] || '👤';
     }
 
-    // Verificar se é o próprio usuário
-    isOwnProfile(userId) {
-        const user = this.getCurrentUser();
-        return user && user.id == userId;
+    // Atualizar dados do usuário atual
+    updateCurrentUser(userData) {
+        this.currentUser = userData;
+        localStorage.setItem('conductor_user', JSON.stringify(userData));
+        console.log('👤 Dados do usuário atualizados:', userData);
+        this.triggerAuthChange();
     }
-
-    // ===============================================
-    // VERIFICAÇÕES ESPECÍFICAS
-    // ===============================================
-
-    // Verificar se pode gerenciar usuários
-    canManageUsers() {
-        return this.hasPermission('Administrador');
-    }
-
-    // Verificar se pode gerenciar chaves
-    canManageKeys() {
-        return this.hasPermission('Operador');
-    }
-
-    // Verificar se pode ver logs
-    canViewLogs() {
-        return this.hasPermission('Administrador');
-    }
-
-    // Verificar se pode acessar configurações do sistema
-    canAccessSystemSettings() {
-        return this.hasPermission('Desenvolvedor');
-    }
-
-    // ===============================================
-    // MÉTODOS DE APOIO PARA UI
-    // ===============================================
 
     // Atualizar informações do usuário na UI
     updateUserDisplay() {
@@ -323,7 +284,7 @@ class AuthManager {
         const userAvatarElements = document.querySelectorAll('[data-user-avatar]');
 
         userNameElements.forEach(el => {
-            el.textContent = user.username || 'Usuário';
+            el.textContent = user.nome_usuario || 'Usuário';
         });
 
         userEmailElements.forEach(el => {
@@ -430,6 +391,12 @@ window.authManager = new AuthManager();
 // Funções globais para compatibilidade com código existente
 window.protectPage = async function(requiredPermission = 'Usuario') {
     if (window.authManager) {
+        // ✅ VISITANTE PODE ACESSAR DASHBOARD SEM PROBLEMAS
+        const user = window.authManager.getCurrentUser();
+        if (user?.permissao === 'Visitante' && requiredPermission === 'Usuario') {
+            console.log('🔓 Visitante acessando página - permitido');
+            return true;
+        }
         return window.authManager.protectPage(requiredPermission);
     }
     console.error('❌ AuthManager não disponível');
@@ -479,4 +446,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-console.log('✅ AuthManager carregado e disponível globalmente');
+console.log('🔐 AUTH LIMPO carregado!');

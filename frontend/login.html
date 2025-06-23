@@ -47,35 +47,35 @@
                     </div>
 
                     <!-- Tab Content -->
-                    <div class="card-body p-4">
+                    <div class="card-body">
                         <div class="tab-content">
-                            
-                            <!-- Login Form -->
+
+                            <!-- Login Tab -->
                             <div class="tab-pane fade show active" id="login-pane" role="tabpanel">
                                 <!-- Message Container -->
-                                <div id="loginMessage" class="alert d-none mb-3"></div>
+                                <div id="loginMessage" class="mb-3"></div>
                                 
                                 <form id="loginForm">
                                     <div class="mb-3">
-                                        <label for="loginUsername" class="form-label">
-                                            <i class="me-2">👤</i>Usuário
+                                        <label for="username" class="form-label text-conductor-light">
+                                            <i class="me-2">👤</i>Nome de Usuário
                                         </label>
-                                        <input type="text" class="form-control form-control-lg" 
-                                               id="loginUsername" name="username" required
+                                        <input type="text" class="form-control conductor-input" 
+                                               id="username" name="username" required
                                                placeholder="Digite seu usuário">
                                     </div>
                                     
                                     <div class="mb-4">
-                                        <label for="loginPassword" class="form-label">
+                                        <label for="password" class="form-label text-conductor-light">
                                             <i class="me-2">🔒</i>Senha
                                         </label>
-                                        <input type="password" class="form-control form-control-lg" 
-                                               id="loginPassword" name="password" required
+                                        <input type="password" class="form-control conductor-input" 
+                                               id="password" name="password" required
                                                placeholder="Digite sua senha">
                                     </div>
                                     
                                     <div class="d-grid">
-                                        <button type="submit" class="btn btn-warning btn-lg fw-bold">
+                                        <button type="submit" class="btn btn-conductor-primary conductor-btn">
                                             <span class="spinner-border spinner-border-sm me-2 d-none" id="loginSpinner"></span>
                                             🚀 ENTRAR NO SISTEMA
                                         </button>
@@ -83,67 +83,72 @@
                                 </form>
                             </div>
 
-                            <!-- Register Form -->
+                            <!-- Register Tab -->
                             <div class="tab-pane fade" id="register-pane" role="tabpanel">
                                 <!-- Message Container -->
-                                <div id="registerMessage" class="alert d-none mb-3"></div>
+                                <div id="registerMessage" class="mb-3"></div>
                                 
                                 <form id="registerForm">
                                     <div class="row g-3">
                                         <div class="col-md-6">
-                                            <label for="regUsername" class="form-label">
+                                            <label for="regUsername" class="form-label text-conductor-light">
                                                 <i class="me-2">👤</i>Usuário *
                                             </label>
-                                            <input type="text" class="form-control" 
+                                            <input type="text" class="form-control conductor-input" 
                                                    id="regUsername" name="username" required
                                                    placeholder="Seu usuário">
                                         </div>
                                         
                                         <div class="col-md-6">
-                                            <label for="regEmail" class="form-label">
+                                            <label for="regEmail" class="form-label text-conductor-light">
                                                 <i class="me-2">📧</i>Email *
                                             </label>
-                                            <input type="email" class="form-control" 
+                                            <input type="email" class="form-control conductor-input" 
                                                    id="regEmail" name="email" required
                                                    placeholder="seu@email.com">
                                         </div>
                                         
                                         <div class="col-md-6">
-                                            <label for="regPassword" class="form-label">
+                                            <label for="regPassword" class="form-label text-conductor-light">
                                                 <i class="me-2">🔒</i>Senha *
                                             </label>
-                                            <input type="password" class="form-control" 
+                                            <input type="password" class="form-control conductor-input" 
                                                    id="regPassword" name="password" required
                                                    placeholder="Sua senha">
                                         </div>
                                         
                                         <div class="col-md-6">
-                                            <label for="regPasswordConfirm" class="form-label">
+                                            <label for="regPasswordConfirm" class="form-label text-conductor-light">
                                                 <i class="me-2">🔒</i>Confirmar *
                                             </label>
-                                            <input type="password" class="form-control" 
+                                            <input type="password" class="form-control conductor-input" 
                                                    id="regPasswordConfirm" name="passwordConfirm" required
                                                    placeholder="Confirme a senha">
                                         </div>
                                         
                                         <div class="col-12">
-                                            <label for="regFuncao" class="form-label">
+                                            <label for="regFuncao" class="form-label text-conductor-light">
                                                 <i class="me-2">💼</i>Função
                                             </label>
-                                            <input type="text" class="form-control" 
-                                                   id="regFuncao" name="funcao"
-                                                   placeholder="Ex: Engenheiro, Técnico...">
+                                            <select class="form-select conductor-input" id="regFuncao" name="funcao">
+                                                <option value="">Selecione uma função (opcional)</option>
+                                                <option value="Estagiario">Estagiário</option>
+                                                <option value="Gestor">Gestor</option>
+                                                <option value="Analista">Analista</option>
+                                                <option value="Coordenador">Coordenador</option>
+                                                <option value="Diretor">Diretor</option>
+                                            </select>
                                         </div>
                                         
                                         <div class="col-12">
-                                            <label for="accessKey" class="form-label">
-                                                <i class="me-2">🔑</i>Chave de Acesso *
+                                            <label for="accessKey" class="form-label text-conductor-light">
+                                                <i class="me-2">🔑</i>Chave de Acesso
                                             </label>
-                                            <input type="text" class="form-control" 
-                                                   id="accessKey" name="accessKey" required
-                                                   placeholder="Chave fornecida pelo administrador">
+                                            <input type="text" class="form-control conductor-input" 
+                                                   id="accessKey" name="accessKey"
+                                                   placeholder="Chave fornecida pelo administrador (opcional)">
                                             <div class="form-text text-conductor-light">
-                                                <small>Solicite uma chave de acesso ao administrador do sistema</small>
+                                                <small>Sem chave = Visitante | Com chave = Usuário</small>
                                             </div>
                                         </div>
                                     </div>

@@ -10,22 +10,24 @@ import { UserPermission } from './user.entity';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  // ✅ SEM @Roles - TODOS USUÁRIOS AUTENTICADOS PODEM ACESSAR
   @Get()
-  @Roles(UserPermission.ADMINISTRADOR, UserPermission.DESENVOLVEDOR)
   async findAll() {
     const users = await this.usersService.findAll();
     return {
+      success: true,
       message: 'Lista de usuários',
       data: users,
       total: users.length,
     };
   }
 
+  // ✅ SEM @Roles - TODOS USUÁRIOS AUTENTICADOS PODEM ACESSAR
   @Get(':id')
-  @Roles(UserPermission.ADMINISTRADOR, UserPermission.DESENVOLVEDOR)
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const user = await this.usersService.findById(id);
     return {
+      success: true,
       message: 'Usuário encontrado',
       data: user,
     };
@@ -36,6 +38,7 @@ export class UsersController {
   async create(@Body() createUserDto: CreateUserDto) {
     const user = await this.usersService.create(createUserDto);
     return {
+      success: true,
       message: 'Usuário criado com sucesso',
       data: user,
     };
@@ -46,6 +49,7 @@ export class UsersController {
   async update(@Param('id', ParseIntPipe) id: number, @Body() updateData: Partial<CreateUserDto>) {
     const user = await this.usersService.updateUser(id, updateData);
     return {
+      success: true,
       message: 'Usuário atualizado com sucesso',
       data: user,
     };
@@ -56,6 +60,7 @@ export class UsersController {
   async remove(@Param('id', ParseIntPipe) id: number) {
     await this.usersService.deactivateUser(id);
     return {
+      success: true,
       message: 'Usuário desativado com sucesso',
     };
   }

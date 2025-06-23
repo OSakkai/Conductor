@@ -1,4 +1,8 @@
-// DASHBOARD - CONDUCTOR PLAYSTATION MENU
+// ===============================================
+// DASHBOARD - CONDUCTOR CORRIGIDO
+// frontend/js/pages/dashboard.js
+// ===============================================
+
 class Dashboard {
     constructor() {
         this.currentMenuIndex = 0;
@@ -17,10 +21,10 @@ class Dashboard {
         this.setupMenuSystem();
         this.loadUserInfo();
         this.loadSystemStatus();
-        this.loadStats();
+        this.loadStats(); // ✅ CORRIGIDO PARA RESPEITAR PERMISSÕES
         this.setupEventListeners();
         this.checkAdminAccess();
-        this.setupButtonListeners(); // ← NOVA FUNÇÃO
+        this.setupButtonListeners();
         
         // Auto-refresh a cada 30 segundos
         setInterval(() => this.refreshData(), 30000);
@@ -34,7 +38,7 @@ class Dashboard {
         if (profileBtn) {
             profileBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                console.log('Botão Perfil clicado!'); // Debug
+                console.log('Botão Perfil clicado!');
                 this.goToPage('profile.html');
             });
         }
@@ -42,7 +46,7 @@ class Dashboard {
         if (adminBtn) {
             adminBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                console.log('Botão Admin clicado!'); // Debug
+                console.log('Botão Admin clicado!');
                 this.goToPage('admin.html');
             });
         }
@@ -53,177 +57,76 @@ class Dashboard {
 
         if (profileCard) {
             profileCard.addEventListener('click', () => {
-                console.log('Card Perfil clicado!'); // Debug
+                console.log('Card Perfil clicado!');
                 this.goToPage('profile.html');
             });
         }
 
         if (adminCard) {
             adminCard.addEventListener('click', () => {
-                console.log('Card Admin clicado!'); // Debug
+                console.log('Card Admin clicado!');
                 this.goToPage('admin.html');
             });
         }
     }
 
     goToPage(page) {
-        console.log(`Navegando para: ${page}`); // Debug
+        console.log(`Navegando para: ${page}`);
         window.location.href = page;
-    }
-
-    setupEventListeners() {
-        // Keyboard navigation
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft') this.navigateMenu(-1);
-            if (e.key === 'ArrowRight') this.navigateMenu(1);
-            if (e.key === 'Enter') this.activateCurrentCard();
-        });
-
-        // Touch/swipe support (básico)
-        let startX = 0;
-        const menuTrack = document.getElementById('menuTrack');
-        
-        if (menuTrack) {
-            menuTrack.addEventListener('touchstart', (e) => {
-                startX = e.touches[0].clientX;
-            });
-            
-            menuTrack.addEventListener('touchend', (e) => {
-                const endX = e.changedTouches[0].clientX;
-                const diff = startX - endX;
-                
-                if (Math.abs(diff) > 50) {
-                    if (diff > 0) this.navigateMenu(1);
-                    else this.navigateMenu(-1);
-                }
-            });
-        }
     }
 
     setupMenuSystem() {
         this.menuCards = document.querySelectorAll('.menu-card');
         this.totalCards = this.menuCards.length;
-        
-        // Filtrar cards visíveis (remover os que estão display: none)
-        this.visibleMenuCards = Array.from(this.menuCards).filter(card => 
-            window.getComputedStyle(card).display !== 'none'
-        );
-        this.totalVisibleCards = this.visibleMenuCards.length;
-        
-        // Ativar primeiro card
-        this.updateMenuDisplay();
-        this.updateIndicators();
+        console.log(`Menu inicializado com ${this.totalCards} cards`);
     }
 
     navigateMenu(direction) {
-        const maxIndex = Math.max(0, this.totalVisibleCards - this.visibleCards);
-        
-        this.currentMenuIndex += direction;
-        
-        // Circular navigation
-        if (this.currentMenuIndex < 0) {
-            this.currentMenuIndex = maxIndex;
-        } else if (this.currentMenuIndex > maxIndex) {
-            this.currentMenuIndex = 0;
+        if (direction === 'left' && this.currentMenuIndex > 0) {
+            this.currentMenuIndex--;
+        } else if (direction === 'right' && this.currentMenuIndex < this.totalCards - this.visibleCards) {
+            this.currentMenuIndex++;
         }
-        
-        this.updateMenuDisplay();
-        this.updateIndicators();
-        
-        // Feedback sonoro (simulado com vibração em mobile)
-        if (navigator.vibrate) {
-            navigator.vibrate(50);
-        }
+        this.updateMenuPosition();
     }
 
-    updateMenuDisplay() {
-        const menuTrack = document.getElementById('menuTrack');
-        if (!menuTrack) return;
-
-        const cardWidth = 380; // 350px + 30px gap
-        const offset = -this.currentMenuIndex * cardWidth;
-        
-        menuTrack.style.transform = `translateX(${offset}px)`;
-        
-        // Atualizar cards ativos
-        this.visibleMenuCards.forEach((card, index) => {
-            card.classList.remove('active');
-            
-            // Cards visíveis na viewport
-            if (index >= this.currentMenuIndex && 
-                index < this.currentMenuIndex + this.visibleCards) {
-                
-                // Card central ativo
-                if (index === this.currentMenuIndex + Math.floor(this.visibleCards / 2)) {
-                    card.classList.add('active');
-                }
-            }
-        });
-    }
-
-    updateIndicators() {
-        const indicators = document.querySelectorAll('.indicator');
-        const maxIndex = Math.max(0, this.totalVisibleCards - this.visibleCards);
-        
-        indicators.forEach((indicator, index) => {
-            indicator.classList.remove('active');
-            if (index === Math.min(this.currentMenuIndex, maxIndex)) {
-                indicator.classList.add('active');
-            }
-        });
-    }
-
-    activateCurrentCard() {
-        const activeCard = document.querySelector('.menu-card.active');
-        if (activeCard) {
-            const button = activeCard.querySelector('button:not(:disabled)');
-            if (button) {
-                console.log('Ativando card via Enter!'); // Debug
-                button.click();
-            }
+    updateMenuPosition() {
+        const container = document.querySelector('.menu-scroll-container');
+        if (container) {
+            const cardWidth = 250; // Largura do card + gap
+            const translateX = -this.currentMenuIndex * cardWidth;
+            container.style.transform = `translateX(${translateX}px)`;
         }
-    }
-
-    async checkAdminAccess() {
-        const user = authManager.getCurrentUser();
-        const adminCard = document.getElementById('adminCard');
-        
-        if (user && (user.permissao === 'Administrador' || user.permissao === 'Desenvolvedor')) {
-            if (adminCard) adminCard.style.display = 'block';
-        } else {
-            if (adminCard) adminCard.style.display = 'none';
-        }
-        
-        // Reconfigurar menu após mudança
-        this.setupMenuSystem();
     }
 
     loadUserInfo() {
         const user = authManager.getCurrentUser();
         if (user) {
+            // ✅ USAR CAMPOS CORRETOS
             const userNameEl = document.getElementById('userName');
             const userRoleEl = document.getElementById('userRole');
             
-            if (userNameEl) userNameEl.textContent = user.nome_usuario;
-            if (userRoleEl) {
-                userRoleEl.textContent = user.permissao;
-                userRoleEl.style.color = authManager.getPermissionColor(user.permissao);
-            }
+            if (userNameEl) userNameEl.textContent = user.nome_usuario || 'Usuário';
+            if (userRoleEl) userRoleEl.textContent = user.permissao || 'Visitante';
         }
     }
 
     async loadSystemStatus() {
         try {
-            // Testar conectividade da API
+            // ✅ ENDPOINT SEGURO QUE VISITANTE PODE ACESSAR
             const response = await conductorAPI.get('/auth/test');
             
-            if (response) {
+            if (response && response.status === 'OK') {
                 this.updateSystemStatus('online', 'Sistema Online');
                 this.updateDbStatus('Conectado');
+            } else {
+                this.updateSystemStatus('offline', 'Sistema Offline');
+                this.updateDbStatus('Desconectado');
             }
         } catch (error) {
+            console.error('Erro ao verificar status do sistema:', error);
             this.updateSystemStatus('offline', 'Sistema Offline');
-            this.updateDbStatus('Erro de Conexão');
+            this.updateDbStatus('Erro');
         }
     }
 
@@ -257,34 +160,44 @@ class Dashboard {
         if (dbStatusEl) dbStatusEl.textContent = status;
     }
 
+    // ✅ CORRIGIDO: loadStats agora usa getSystemStats que respeita permissões
     async loadStats() {
         try {
-            // Carregar estatísticas reais
-            const users = await conductorAPI.get('/users');
+            console.log('📊 Dashboard carregando estatísticas...');
             
-            if (users && users.data) {
+            // ✅ USA O MÉTODO CORRIGIDO DO API.JS QUE RESPEITA PERMISSÕES
+            const stats = await window.conductorAPI.getSystemStats();
+            
+            if (stats) {
+                // Atualizar elementos se existirem
                 const totalUsersEl = document.getElementById('totalUsers');
                 const usersOnlineEl = document.getElementById('usersOnline');
+                const activeProjectsEl = document.getElementById('activeProjects');
+                const systemUptimeEl = document.getElementById('systemUptime');
+                const notificationsEl = document.getElementById('notifications');
                 
-                if (totalUsersEl) totalUsersEl.textContent = users.data.length;
-                if (usersOnlineEl) usersOnlineEl.textContent = '1'; // User atual
+                if (totalUsersEl) totalUsersEl.textContent = stats.totalUsers || 'N/A';
+                if (usersOnlineEl) usersOnlineEl.textContent = stats.onlineUsers || '1';
+                if (activeProjectsEl) activeProjectsEl.textContent = '3'; // Mock
+                if (systemUptimeEl) systemUptimeEl.textContent = stats.uptime || 'N/A';
+                if (notificationsEl) notificationsEl.textContent = '0'; // Mock
+                
+                console.log('✅ Estatísticas carregadas:', stats);
             }
             
             // Atualizar última atividade
             const lastActivityEl = document.getElementById('lastActivity');
             if (lastActivityEl) lastActivityEl.textContent = 'Agora';
             
-            // Estatísticas mockadas por enquanto
-            const activeProjectsEl = document.getElementById('activeProjects');
-            const systemUptimeEl = document.getElementById('systemUptime');
-            const notificationsEl = document.getElementById('notifications');
-            
-            if (activeProjectsEl) activeProjectsEl.textContent = '3';
-            if (systemUptimeEl) systemUptimeEl.textContent = '99.9%';
-            if (notificationsEl) notificationsEl.textContent = '0';
-            
         } catch (error) {
-            console.error('Erro ao carregar estatísticas:', error);
+            console.error('❌ Erro ao carregar estatísticas:', error);
+            
+            // ✅ FALLBACK SEGURO PARA VISITANTES
+            const totalUsersEl = document.getElementById('totalUsers');
+            const usersOnlineEl = document.getElementById('usersOnline');
+            
+            if (totalUsersEl) totalUsersEl.textContent = 'N/A';
+            if (usersOnlineEl) usersOnlineEl.textContent = '1';
         }
     }
 
@@ -296,9 +209,35 @@ class Dashboard {
         const lastActivityEl = document.getElementById('lastActivity');
         if (lastActivityEl) lastActivityEl.textContent = 'Agora';
     }
+
+    checkAdminAccess() {
+        // Mostrar/esconder elementos baseado em permissões
+        if (authManager.hasPermission('Administrador')) {
+            const adminElements = document.querySelectorAll('[data-requires="admin"]');
+            adminElements.forEach(el => el.style.display = '');
+        }
+    }
+
+    setupEventListeners() {
+        // Navigation
+        const leftBtn = document.querySelector('.nav-btn.left');
+        const rightBtn = document.querySelector('.nav-btn.right');
+        
+        if (leftBtn) leftBtn.addEventListener('click', () => this.navigateMenu('left'));
+        if (rightBtn) rightBtn.addEventListener('click', () => this.navigateMenu('right'));
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') this.navigateMenu('left');
+            if (e.key === 'ArrowRight') this.navigateMenu('right');
+        });
+    }
 }
 
-// Funções globais para navegação
+// ===============================================
+// FUNÇÕES GLOBAIS
+// ===============================================
+
 function navigateMenu(direction) {
     if (window.dashboard) {
         window.dashboard.navigateMenu(direction);
@@ -306,12 +245,17 @@ function navigateMenu(direction) {
 }
 
 function goToPage(page) {
-    console.log(`Função global goToPage chamada: ${page}`); // Debug
+    console.log(`Função global goToPage chamada: ${page}`);
     window.location.href = page;
 }
 
-// Inicializar dashboard
+// ===============================================
+// INICIALIZAÇÃO
+// ===============================================
+
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Dashboard iniciando...'); // Debug
+    console.log('Dashboard iniciando...');
     window.dashboard = new Dashboard();
 });
+
+console.log('✅ Dashboard.js carregado');

@@ -36,7 +36,8 @@ export class JwtAuthGuard implements CanActivate {
         return true;
       }
 
-      return requiredRoles.some((role) => payload.permissao?.includes(role));
+      // ✅ CORREÇÃO: Comparação direta em vez de includes()
+      return requiredRoles.some((role) => payload.permissao === role);
     } catch {
       throw new UnauthorizedException('Token inválido');
     }
