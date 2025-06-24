@@ -1,7 +1,12 @@
+// ===============================================
+// CONDUCTOR - LOG ENTITY COMPLETO ORIGINAL  
+// backend/src/logs/log.entity.ts
+// ===============================================
+
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { User } from '../users/user.entity';
 
-@Entity('logs_sistema')
+@Entity('logs_sistema') // ✅ NOME CORRETO conforme banco real
 export class LogSistema {
   @PrimaryGeneratedColumn()
   id: number;
@@ -9,7 +14,7 @@ export class LogSistema {
   @Column({ nullable: true })
   usuario_id: number;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'usuario_id' })
   usuario: User;
 

@@ -100,7 +100,7 @@ export class UsersService {
     }
   }
 
-  // ✅ FASE 1: Criar usuário com validações
+  // ✅ CORREÇÃO CRÍTICA: Criar usuário SEM hash duplo
   async create(createUserDto: CreateUserDto): Promise<User> {
     try {
       // Verificar se username já existe
@@ -115,13 +115,13 @@ export class UsersService {
         throw new ConflictException('Email já está em uso');
       }
 
-      // ✅ FASE 1: Hash da senha com Argon2
-      const hashedPassword = await argon2.hash(createUserDto.senha);
-
+      // ✅ CORREÇÃO: REMOVER hash aqui pois AuthService já hasheia
+      // A senha já vem hasheada do AuthService.register()
+      
       // Criar usuário
       const user = this.userRepository.create({
         ...createUserDto,
-        senha: hashedPassword,
+        // senha já está hasheada pelo AuthService
       });
 
       const savedUser = await this.userRepository.save(user);

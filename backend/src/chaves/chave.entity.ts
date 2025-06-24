@@ -1,3 +1,8 @@
+// ===============================================
+// CONDUCTOR - CHAVE ENTITY COMPLETO ORIGINAL
+// backend/src/chaves/chave.entity.ts
+// ===============================================
+
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
 
 export enum ChaveTipo {
@@ -20,7 +25,7 @@ export enum ChaveStatus {
   EXPIRADA = 'expirada',
 }
 
-@Entity('chaves_acesso')
+@Entity('chaves_acesso') // ✅ NOME CORRETO conforme banco real
 export class Chave {
   @PrimaryGeneratedColumn()
   id: number;

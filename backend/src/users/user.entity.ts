@@ -1,3 +1,8 @@
+// ===============================================
+// CONDUCTOR - USER ENTITY COMPLETO ORIGINAL
+// backend/src/users/user.entity.ts
+// ===============================================
+
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 export enum UserRole {
@@ -22,7 +27,7 @@ export enum UserStatus {
   BLOQUEADO = 'Bloqueado',
 }
 
-@Entity('usuarios') // ✅ CORREÇÃO DEFINITIVA: Schema SQL real usa 'usuarios' sem acento
+@Entity('usuarios') // ✅ CORREÇÃO ÚNICA: Schema SQL real usa 'usuarios' sem acento
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
@@ -39,7 +44,7 @@ export class User {
   @Column({
     type: 'enum',
     enum: UserPermission,
-    default: UserPermission.VISITANTE, // ✅ FASE 1: Default corrigido
+    default: UserPermission.VISITANTE,
   })
   permissao: UserPermission;
 
@@ -47,7 +52,7 @@ export class User {
   email: string;
 
   @Column({ nullable: true, length: 20 })
-  celular: string; // ✅ FASE 2: Campo padronizado
+  celular: string;
 
   @Column({ length: 255 })
   senha: string;
@@ -55,7 +60,7 @@ export class User {
   @Column({
     type: 'enum',
     enum: UserStatus,
-    default: UserStatus.ATIVO, // ✅ FASE 1: Default corrigido
+    default: UserStatus.ATIVO,
   })
   status: UserStatus;
 
@@ -74,18 +79,16 @@ export class User {
   @Column({ nullable: true })
   token_expiracao: Date;
 
-  // ✅ FASE 3: Métodos de segurança adicionados
+  // Métodos de segurança
   updateLastLogin() {
     this.ultimo_login = new Date();
   }
 
-  // ✅ FASE 3: Método para invalidar tokens de recuperação
   clearRecoveryToken() {
     this.token_recuperacao = null;
     this.token_expiracao = null;
   }
 
-  // ✅ FASE 4: Método para verificar se conta está ativa
   isActive(): boolean {
     return this.status === UserStatus.ATIVO;
   }
