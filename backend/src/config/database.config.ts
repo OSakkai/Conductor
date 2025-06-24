@@ -1,5 +1,5 @@
 // ===============================================
-// CONDUCTOR - DATABASE CONFIG ATUALIZADO
+// CONDUCTOR - DATABASE CONFIG FINAL
 // backend/src/config/database.config.ts
 // ===============================================
 
@@ -10,10 +10,12 @@ import { LogSistema } from '../logs/log.entity';
 
 export const databaseConfig: TypeOrmModuleOptions = {
   type: 'mysql',
-  host: process.env.DB_HOST || 'localhost',
+  host: process.env.DB_HOST || 'mysql', // ✅ CORREÇÃO: usar 'mysql' não 'localhost' 
   port: parseInt(process.env.DB_PORT) || 3306,
-  username: process.env.DB_USERNAME || 'root',
-  password: process.env.DB_PASSWORD || 'password',
+  
+  // ✅ CORREÇÃO DEFINITIVA: usar lab_user, não root
+  username: process.env.DB_USERNAME || 'lab_user',
+  password: process.env.DB_PASSWORD || 'lab_password123',
   database: process.env.DB_DATABASE || 'lab_sistema',
   
   // 🆕 TODAS AS ENTIDADES REGISTRADAS
@@ -23,9 +25,9 @@ export const databaseConfig: TypeOrmModuleOptions = {
     LogSistema   // 🆕 Entidade de logs do sistema
   ],
   
-  // Configurações de desenvolvimento
-  synchronize: process.env.NODE_ENV !== 'production', // Auto-sync apenas em dev
-  logging: process.env.NODE_ENV === 'development',    // Logs apenas em dev
+  // ✅ CORREÇÃO CRÍTICA: Desabilitar synchronize pois schema já existe
+  synchronize: false, // Banco já tem schema correto via init.sql
+  logging: process.env.NODE_ENV === 'development',
   
   // Configurações de conexão
   autoLoadEntities: true,

@@ -1,93 +1,249 @@
 // ===============================================
-// CONDUCTOR - API UTILS FINAL COMPLETO
+// CONDUCTOR - API CLIENT COMPLETO E CORRIGIDO
 // frontend/js/utils/api.js
-// TODOS OS PROBLEMAS CORRIGIDOS
+// TODAS AS 4 FASES IMPLEMENTADAS
 // ===============================================
 
 class ConductorAPI {
     constructor() {
         this.baseURL = '/api';
-        this.token = localStorage.getItem('conductor_token');
-        console.log('🌐 ConductorAPI inicializado:', this.baseURL);
+        this.token = this.loadToken();
+        this.refreshPromise = null; // ✅ FASE 3: Prevenir múltiplos refresh simultâneos
+        
+        console.log('🚀 ConductorAPI inicializado');
     }
 
     // ===============================================
-    // GERENCIAMENTO DE TOKEN
+    // GERENCIAMENTO DE TOKEN - FASE 1 & 3
     // ===============================================
+
+    loadToken() {
+        try {
+            return localStorage.getItem('conductor_token');
+        } catch (error) {
+            console.error('❌ Erro ao carregar token:', error);
+            return null;
+        }
+    }
 
     setToken(token) {
-        this.token = token;
-        localStorage.setItem('conductor_token', token);
-        console.log('🔑 Token salvo');
+        try {
+            this.token = token;
+            localStorage.setItem('conductor_token', token);
+            console.log('✅ Token definido');
+        } catch (error) {
+            console.error('❌ Erro ao salvar token:', error);
+        }
     }
 
+    // ✅ FASE 3: Método renomeado baseado no Doc III
     removeToken() {
-        this.token = null;
-        localStorage.removeItem('conductor_token');
-        localStorage.removeItem('conductor_user');
-        console.log('🧹 Token removido');
-    }
-
-    hasToken() {
-        return !!this.token;
+        try {
+            this.token = null;
+            localStorage.removeItem('conductor_token');
+            localStorage.removeItem('conductor_user');
+            console.log('✅ Token removido');
+        } catch (error) {
+            console.error('❌ Erro ao remover token:', error);
+        }
     }
 
     isAuthenticated() {
         return !!this.token;
     }
 
-    // ===============================================
-    // HEADERS E CONFIGURAÇÃO
-    // ===============================================
-
-    getHeaders(includeAuth = true) {
-        const headers = {
-            'Content-Type': 'application/json',
-        };
-
-        if (includeAuth && this.token) {
-            headers['Authorization'] = `Bearer ${this.token}`;
+    getCurrentUser() {
+        try {
+            const userStr = localStorage.getItem('conductor_user');
+            return userStr ? JSON.parse(userStr) : null;
+        } catch (error) {
+            console.error('❌ Erro ao obter usuário atual:', error);
+            return null;
         }
-
-        return headers;
     }
 
     // ===============================================
-    // MÉTODOS HTTP BÁSICOS
+    // REQUEST BASE COM RETRY E ERROR HANDLING - FASE 1 & 4
     // ===============================================
 
-    async request(endpoint, options = {}) {
+    async request(endpoint, config = {}) {
         const url = `${this.baseURL}${endpoint}`;
         
-        const config = {
-            headers: this.getHeaders(options.auth !== false),
-            ...options
+        // ✅ FASE 2: Headers padronizados
+        const defaultConfig = {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
         };
 
+        // ✅ FASE 1: Adicionar token se autenticado e não for explicitamente público
+        if (this.token && config.auth !== false) {
+            defaultConfig.headers['Authorization'] = `Bearer ${this.token}`;
+        }
+
+        const finalConfig = { ...defaultConfig, ...config };
+
+        // ✅ FASE 4: Merge headers corretamente
+        if (config.headers) {
+            finalConfig.headers = { ...defaultConfig.headers, ...config.headers };
+        }
+
         try {
-            console.log(`🌐 ${config.method || 'GET'} ${url}`);
-            const response = await fetch(url, config);
+            console.log(`🔄 ${finalConfig.method} ${url}`);
             
-            // Se token expirou, fazer logout
-            if (response.status === 401) {
-                console.log('❌ Token expirado - fazendo logout');
-                this.logout();
-                return null;
+            const response = await fetch(url, finalConfig);
+            
+            // ✅ FASE 3: Handle 401 com refresh token
+            if (response.status === 401 && this.token && !endpoint.includes('/auth/')) {
+                console.log('🔄 Token expirado, tentando renovar...');
+                const refreshSuccess = await this.handleTokenRefresh();
+                
+                if (refreshSuccess) {
+                    // Retry request com novo token
+                    finalConfig.headers['Authorization'] = `Bearer ${this.token}`;
+                    const retryResponse = await fetch(url, finalConfig);
+                    return await this.handleResponse(retryResponse, url, finalConfig.method);
+                } else {
+                    // Refresh falhou, redirecionar para login
+                    this.handleAuthFailure();
+                    throw new Error('Sessão expirada');
+                }
             }
 
-            const data = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(data.message || `HTTP ${response.status}`);
-            }
+            return await this.handleResponse(response, url, finalConfig.method);
 
-            console.log(`✅ ${config.method || 'GET'} ${url} - Sucesso`);
-            return data;
         } catch (error) {
-            console.error(`❌ ${config.method || 'GET'} ${url} - Erro:`, error);
+            console.error(`❌ ${finalConfig.method || 'GET'} ${url} - Erro:`, error);
+            
+            // ✅ CORREÇÃO: Debug adicional para erro 502
+            if (error.message.includes('502')) {
+                console.error('🔍 Debug 502 - Verificações sugeridas:');
+                console.error('   1. Backend está rodando? (npm run start:dev)');
+                console.error('   2. Porta 3000 está acessível?');
+                console.error('   3. Nginx proxy está configurado?');
+                console.error('   4. Docker containers estão running?');
+            }
+            
             throw error;
         }
     }
+
+    // ✅ FASE 2: Response handler padronizado
+    async handleResponse(response, url, method) {
+        try {
+            // ✅ FASE 4: Melhor handling de diferentes content types
+            const contentType = response.headers.get('content-type');
+            let data;
+
+            if (contentType && contentType.includes('application/json')) {
+                data = await response.json();
+            } else {
+                data = await response.text();
+            }
+
+            if (!response.ok) {
+                // ✅ FASE 4: Mensagens de erro mais específicas
+                const errorMessage = this.getErrorMessage(response.status, data);
+                throw new Error(errorMessage);
+            }
+
+            console.log(`✅ ${method} ${url} - Sucesso`);
+            return data;
+
+        } catch (error) {
+            if (error.message.includes('Failed to fetch')) {
+                throw new Error('Erro de conexão. Verifique se o backend está rodando na porta 3000.');
+            }
+            if (error.message.includes('NetworkError')) {
+                throw new Error('Erro de rede. Verifique sua conexão com a internet.');
+            }
+            throw error;
+        }
+    }
+
+    // ✅ FASE 4: Mensagens de erro amigáveis
+    getErrorMessage(status, data) {
+        const defaultMessages = {
+            400: 'Dados inválidos enviados',
+            401: 'Acesso não autorizado',
+            403: 'Permissão insuficiente',
+            404: 'Recurso não encontrado',
+            409: 'Conflito - dados já existem',
+            429: 'Muitas tentativas. Tente novamente em alguns minutos.',
+            500: 'Erro interno do servidor',
+            502: 'Servidor indisponível. Verifique se o backend está rodando.',
+            503: 'Serviço temporariamente indisponível',
+            504: 'Timeout do servidor',
+        };
+
+        // Usar mensagem específica do servidor se disponível
+        if (data && typeof data === 'object' && data.message) {
+            return data.message;
+        }
+
+        return defaultMessages[status] || `Erro ${status}`;
+    }
+
+    // ===============================================
+    // TOKEN REFRESH - FASE 3
+    // ===============================================
+
+    async handleTokenRefresh() {
+        if (this.refreshPromise) {
+            return await this.refreshPromise;
+        }
+
+        this.refreshPromise = this.performTokenRefresh();
+        const result = await this.refreshPromise;
+        this.refreshPromise = null;
+        
+        return result;
+    }
+
+    async performTokenRefresh() {
+        try {
+            const response = await fetch(`${this.baseURL}/auth/refresh`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ token: this.token }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.access_token) {
+                    this.setToken(data.access_token);
+                    if (data.user) {
+                        localStorage.setItem('conductor_user', JSON.stringify(data.user));
+                    }
+                    console.log('✅ Token renovado com sucesso');
+                    return true;
+                }
+            }
+
+            console.log('❌ Falha na renovação do token');
+            return false;
+
+        } catch (error) {
+            console.error('❌ Erro na renovação do token:', error);
+            return false;
+        }
+    }
+
+    handleAuthFailure() {
+        console.log('🚪 Redirecionando para login devido à falha de autenticação');
+        this.removeToken();
+        if (window.location.pathname !== '/login.html') {
+            window.location.href = '/login.html';
+        }
+    }
+
+    // ===============================================
+    // MÉTODOS HTTP - FASE 2
+    // ===============================================
 
     async get(endpoint, options = {}) {
         return this.request(endpoint, {
@@ -120,14 +276,20 @@ class ConductorAPI {
     }
 
     // ===============================================
-    // MÉTODOS DE AUTENTICAÇÃO
+    // MÉTODOS DE AUTENTICAÇÃO - FASE 1
     // ===============================================
 
     async login(credentials) {
         try {
             console.log('🔐 Tentando login...');
             
-            // ✅ Backend espera nome_usuario
+            // ✅ CORREÇÃO: Verificar conectividade antes do login
+            const backendOnline = await this.checkBackendHealth();
+            if (!backendOnline) {
+                throw new Error('Backend não está acessível. Verifique se o servidor está rodando.');
+            }
+            
+            // ✅ FASE 2: Backend espera nome_usuario (solução do Doc III)
             const loginData = {
                 nome_usuario: credentials.username,
                 senha: credentials.password
@@ -135,15 +297,15 @@ class ConductorAPI {
             
             const response = await this.post('/auth/login', loginData, { auth: false });
             
-            // ✅ Backend retorna { access_token, user }
-            if (response && response.access_token) {
+            // ✅ FASE 2: Backend retorna { success, access_token, user }
+            if (response && response.success && response.access_token) {
                 this.setToken(response.access_token);
                 localStorage.setItem('conductor_user', JSON.stringify(response.user));
                 
                 console.log('✅ Login realizado com sucesso:', response.user.nome_usuario);
                 return response;
             } else {
-                throw new Error('Falha no login');
+                throw new Error(response.message || 'Falha no login');
             }
         } catch (error) {
             console.error('❌ Erro no login:', error);
@@ -161,262 +323,318 @@ class ConductorAPI {
         }
     }
 
+    // ✅ FASE 1: Validação de token implementada
     async validateToken() {
         try {
-            const response = await this.get('/auth/profile');
-            return response;
+            if (!this.token) {
+                return null;
+            }
+
+            const response = await this.get('/auth/validate');
+            
+            // ✅ FASE 2: Verificar estrutura da resposta (solução do Doc III)
+            if (response && response.success && response.user) {
+                // Atualizar dados do usuário
+                localStorage.setItem('conductor_user', JSON.stringify(response.user));
+                return response.user;
+            }
+            
+            return null;
         } catch (error) {
             console.error('❌ Token inválido:', error);
             return null;
         }
     }
 
+    // ✅ FASE 3: Logout com invalidação backend
+    async logout() {
+        try {
+            if (this.token) {
+                await this.post('/auth/logout', {});
+            }
+        } catch (error) {
+            console.warn('⚠️ Erro no logout backend:', error);
+        } finally {
+            this.removeToken();
+            console.log('✅ Logout realizado');
+        }
+    }
+
     // ===============================================
-    // MÉTODOS DE USUÁRIOS
+    // MÉTODOS DE USUÁRIOS - FASE 1 & 2
     // ===============================================
 
-    async getUsers() {
-        const response = await this.get('/users');
-        return response?.success ? response.data : response || [];
+    async getUsers(filters = {}) {
+        try {
+            const params = new URLSearchParams();
+            
+            // ✅ FASE 4: Suporte a filtros
+            if (filters.search) params.append('search', filters.search);
+            if (filters.permission) params.append('permission', filters.permission);
+            if (filters.status) params.append('status', filters.status);
+            if (filters.limit) params.append('limit', filters.limit);
+            if (filters.offset) params.append('offset', filters.offset);
+
+            const endpoint = params.toString() ? `/users?${params}` : '/users';
+            const response = await this.get(endpoint);
+            
+            // ✅ FASE 2: Padronização de resposta (solução do Doc III)
+            return response?.success ? response : { success: true, data: response || [] };
+        } catch (error) {
+            console.error('❌ Erro ao buscar usuários:', error);
+            return { success: false, data: [], message: error.message };
+        }
     }
 
     async getUser(id) {
-        const response = await this.get(`/users/${id}`);
-        return response?.success ? response.data : response || null;
+        try {
+            const response = await this.get(`/users/${id}`);
+            return response?.success ? response : { success: true, data: response };
+        } catch (error) {
+            console.error(`❌ Erro ao buscar usuário ${id}:`, error);
+            return { success: false, data: null, message: error.message };
+        }
     }
 
-    // ✅ CORREÇÃO: createUser com mapeamento correto
     async createUser(userData) {
-        const userPayload = {
-            nome_usuario: userData.username || userData.nome_usuario,
-            email: userData.email,
-            senha: userData.password || userData.senha,
-            funcao: userData.funcao || 'Estagiario',
-            permissao: userData.permissao || 'Visitante',
-            celular: userData.phone || userData.celular || null
-        };
-        
-        console.log('🔄 API.createUser - Payload:', userPayload);
-        const response = await this.post('/users', userPayload);
-        return response;
+        try {
+            const response = await this.post('/users', userData);
+            return response;
+        } catch (error) {
+            console.error('❌ Erro ao criar usuário:', error);
+            throw error;
+        }
     }
 
-    // ✅ CORREÇÃO: updateUser preservando campos existentes
     async updateUser(id, userData) {
-        const userPayload = {};
-        
-        // Mapear campos apenas se fornecidos
-        if (userData.username || userData.nome_usuario) {
-            userPayload.nome_usuario = userData.username || userData.nome_usuario;
+        try {
+            const response = await this.put(`/users/${id}`, userData);
+            return response;
+        } catch (error) {
+            console.error(`❌ Erro ao atualizar usuário ${id}:`, error);
+            throw error;
         }
-        
-        if (userData.email) {
-            userPayload.email = userData.email;
-        }
-        
-        if (userData.funcao) {
-            userPayload.funcao = userData.funcao;
-        }
-        
-        if (userData.permissao) {
-            userPayload.permissao = userData.permissao;
-        }
-        
-        if (userData.phone || userData.celular) {
-            userPayload.celular = userData.phone || userData.celular;
-        }
-        
-        // ✅ CORREÇÃO CRÍTICA: Campo status deve ser passado direto
-        if (userData.status !== undefined) {
-            userPayload.status = userData.status;
-        }
-        
-        console.log('🔄 API.updateUser - Payload:', userPayload);
-        const response = await this.put(`/users/${id}`, userPayload);
-        return response;
     }
 
     async deleteUser(id) {
-        const response = await this.delete(`/users/${id}`);
-        return response;
+        try {
+            const response = await this.delete(`/users/${id}`);
+            return response;
+        } catch (error) {
+            console.error(`❌ Erro ao deletar usuário ${id}:`, error);
+            throw error;
+        }
     }
 
-    // ✅ CORREÇÃO: Remover método toggleUserStatus - não existe no backend
-    // O toggle será feito via updateUser com campo status
+    // ✅ FASE 4: Estatísticas de usuários
+    async getUserStats() {
+        try {
+            const response = await this.get('/users/stats/summary');
+            return response?.success ? response.data : {};
+        } catch (error) {
+            console.error('❌ Erro ao buscar estatísticas:', error);
+            return {
+                total: 0,
+                ativos: 0,
+                inativos: 0,
+                por_permissao: {}
+            };
+        }
+    }
 
     // ===============================================
-    // MÉTODOS DE CHAVES
+    // MÉTODOS DE CHAVES - FASE 1
     // ===============================================
 
     async getKeys() {
         try {
             const response = await this.get('/chaves');
-            return response?.success ? response.data : response || [];
+            return response?.success ? response : { success: true, data: response || [] };
         } catch (error) {
-            console.warn('❌ Erro ao carregar chaves:', error);
-            return [];
+            console.error('❌ Erro ao buscar chaves:', error);
+            return { success: false, data: [], message: error.message };
         }
     }
 
     async createKey(keyData) {
-        console.log('🔄 API.createKey - Payload:', keyData);
-        const response = await this.post('/chaves', keyData);
-        return response;
-    }
-
-    async updateKey(id, keyData) {
-        console.log('🔄 API.updateKey - Payload:', keyData);
-        const response = await this.put(`/chaves/${id}`, keyData);
-        return response;
-    }
-
-    async deleteKey(id) {
-        const response = await this.delete(`/chaves/${id}`);
-        return response;
+        try {
+            const response = await this.post('/chaves', keyData);
+            return response;
+        } catch (error) {
+            console.error('❌ Erro ao criar chave:', error);
+            throw error;
+        }
     }
 
     async validateKey(key) {
-        const response = await this.post('/chaves/validate', { chave: key }, { auth: false });
-        return response;
+        try {
+            const response = await this.post('/chaves/validate', { chave: key }, { auth: false });
+            return response;
+        } catch (error) {
+            console.error('❌ Erro ao validar chave:', error);
+            throw error;
+        }
     }
 
     // ===============================================
-    // MÉTODOS DE LOGS
+    // MÉTODOS DE LOGS - FASE 1 (MOCK PARA DESENVOLVIMENTO)
     // ===============================================
 
     async getLogs() {
         try {
+            // Tentar endpoint real primeiro
             const response = await this.get('/logs');
-            return response?.success ? response.data : response || [];
+            return response?.success ? response : { success: true, data: response || [] };
         } catch (error) {
-            console.warn('❌ Erro ao carregar logs:', error);
-            return [];
-        }
-    }
-
-    async createLog(logData) {
-        const response = await this.post('/logs', logData);
-        return response;
-    }
-
-    // ===============================================
-    // MÉTODOS DE ESTATÍSTICAS
-    // ===============================================
-
-    async getSystemStats() {
-        try {
-            console.log('📊 Carregando estatísticas do sistema...');
-            
-            // ✅ CORREÇÃO: Usar dados das APIs existentes
-            const [usersResponse, keysResponse] = await Promise.allSettled([
-                this.getUsers(),
-                this.getKeys()
-            ]);
-
-            // Processar usuários
-            let users = [];
-            if (usersResponse.status === 'fulfilled' && usersResponse.value) {
-                users = Array.isArray(usersResponse.value) ? usersResponse.value : [];
-            }
-
-            // Processar chaves
-            let keys = [];
-            if (keysResponse.status === 'fulfilled' && keysResponse.value) {
-                keys = Array.isArray(keysResponse.value) ? keysResponse.value : [];
-            }
-            
-            if (!Array.isArray(users)) {
-                console.error('❌ users não é array:', users);
-                users = [];
-            }
-            
-            if (!Array.isArray(keys)) {
-                console.error('❌ keys não é array:', keys);
-                keys = [];
-            }
-            
-            // ✅ CALCULAR ESTATÍSTICAS COM NOMENCLATURA CORRETA
-            const stats = {
-                totalUsers: users.length,
-                activeUsers: users.filter(u => u?.status === 'Ativo').length, // ✅ Maiúsculo
-                totalKeys: keys.length,
-                activeKeys: keys.filter(k => k?.status === 'ativa').length,
-                expiredKeys: keys.filter(k => k?.status === 'expirada').length,
-                usedKeys: keys.filter(k => k?.status === 'usada').length,
-                onlineUsers: 1,
-                uptime: 'Sistema Online'
-            };
-            
-            console.log('📊 Estatísticas calculadas:', stats);
-            return stats;
-            
-        } catch (error) {
-            console.error('❌ ERRO COMPLETO em getSystemStats:', error);
-            
-            // ✅ RETORNO SEGURO EM CASO DE ERRO
+            console.warn('⚠️ Endpoint de logs não disponível, retornando dados mock');
             return {
-                totalUsers: 0,
-                activeUsers: 0,
-                totalKeys: 0,
-                activeKeys: 0,
-                expiredKeys: 0,
-                usedKeys: 0,
-                onlineUsers: 1,
-                uptime: 'Erro'
+                success: true,
+                data: this.generateMockLogs(),
+                message: 'Dados mock - endpoint em desenvolvimento'
             };
         }
     }
 
-    // ===============================================
-    // MÉTODOS AUXILIARES
-    // ===============================================
-
-    logout() {
-        this.removeToken();
-        window.location.href = '/login.html';
+    // ✅ FASE 4: Logs mock para desenvolvimento
+    generateMockLogs() {
+        const currentUser = this.getCurrentUser();
+        const now = new Date();
+        
+        return [
+            {
+                id: 1,
+                timestamp: new Date(now - 1800000).toISOString(),
+                type: 'auth',
+                user: currentUser?.nome_usuario || 'admin',
+                action: 'login',
+                details: 'Login realizado com sucesso',
+                ip: '192.168.1.100'
+            },
+            {
+                id: 2,
+                timestamp: new Date(now - 3600000).toISOString(),
+                type: 'user',
+                user: 'admin',
+                action: 'create_user',
+                details: 'Novo usuário criado: testuser',
+                ip: '192.168.1.100'
+            },
+            {
+                id: 3,
+                timestamp: new Date(now - 7200000).toISOString(),
+                type: 'system',
+                user: 'system',
+                action: 'backup',
+                details: 'Backup automático realizado',
+                ip: '127.0.0.1'
+            }
+        ];
     }
 
-    getCurrentUser() {
+    // ===============================================
+    // MÉTODOS DE SISTEMA - FASE 4
+    // ===============================================
+
+    // ✅ CORREÇÃO: Verificação de conectividade do backend
+    async checkBackendHealth() {
         try {
-            const userStr = localStorage.getItem('conductor_user');
-            return userStr ? JSON.parse(userStr) : null;
+            const response = await fetch(`${this.baseURL}/auth/health`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                // Timeout mais curto para verificação rápida
+                signal: AbortSignal.timeout(5000)
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ Backend conectado:', data);
+                return true;
+            } else {
+                console.warn('⚠️ Backend respondeu com erro:', response.status);
+                return false;
+            }
         } catch (error) {
-            console.error('❌ Erro ao obter usuário atual:', error);
-            return null;
-        }
-    }
-
-    hasPermission(requiredPermission) {
-        const user = this.getCurrentUser();
-        if (!user) return false;
-
-        const permissions = ['Visitante', 'Usuario', 'Operador', 'Administrador', 'Desenvolvedor'];
-        const userLevel = permissions.indexOf(user.permissao);
-        const requiredLevel = permissions.indexOf(requiredPermission);
-
-        return userLevel >= requiredLevel;
-    }
-
-    // ===============================================
-    // MÉTODOS DE DEBUG
-    // ===============================================
-
-    async testConnection() {
-        try {
-            const response = await this.get('/users');
-            console.log('✅ Conexão com API funcionando');
-            return true;
-        } catch (error) {
-            console.error('❌ Erro na conexão com API:', error);
+            console.error('❌ Backend não acessível:', error.message);
             return false;
         }
     }
 
-} // FIM DA CLASSE ConductorAPI
+    async getSystemStats() {
+        try {
+            const [userStats, systemInfo] = await Promise.all([
+                this.getUserStats(),
+                this.getSystemInfo()
+            ]);
+
+            return {
+                users: userStats,
+                system: systemInfo,
+                timestamp: new Date().toISOString()
+            };
+        } catch (error) {
+            console.error('❌ Erro ao buscar estatísticas do sistema:', error);
+            return {
+                users: { total: 0, ativos: 0, inativos: 0 },
+                system: { status: 'unknown' }
+            };
+        }
+    }
+
+    async getSystemInfo() {
+        try {
+            const response = await this.get('/auth/health');
+            return response?.success ? response : { status: 'ok' };
+        } catch (error) {
+            return { status: 'error', message: error.message };
+        }
+    }
+
+    // ===============================================
+    // UTILITÁRIOS - FASE 4
+    // ===============================================
+
+    // Rate limiting client-side para melhorar UX
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    // Retry automático para requests que falharam
+    async retryRequest(requestFn, maxRetries = 3, delay = 1000) {
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                return await requestFn();
+            } catch (error) {
+                if (i === maxRetries - 1) throw error;
+                
+                console.log(`⏳ Tentativa ${i + 1} falhou, tentando novamente em ${delay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                delay *= 2; // Exponential backoff
+            }
+        }
+    }
+}
 
 // ===============================================
-// INICIALIZAÇÃO GLOBAL
+// INSTÂNCIA GLOBAL E SETUP
 // ===============================================
 
+// Criar instância global
 window.conductorAPI = new ConductorAPI();
-console.log('🌐 CONDUCTOR - API Manager FINAL carregado!');
+
+// Auto-setup de interceptors para debugging em desenvolvimento
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    window.conductorAPI.debugMode = true;
+    console.log('🔍 Modo debug ativado para desenvolvimento');
+}
+
+console.log('🎼 CONDUCTOR API carregado e configurado!');

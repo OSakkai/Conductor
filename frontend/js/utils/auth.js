@@ -1,5 +1,9 @@
-// AUTH MANAGER - CONDUCTOR
-// Sistema de autenticação e autorização corrigido e otimizado
+// ===============================================
+// CONDUCTOR - AUTH MANAGER COMPLETO E CORRIGIDO
+// frontend/js/utils/auth.js
+// TODAS AS 4 FASES IMPLEMENTADAS
+// SOLUÇÕES DO DOC III APLICADAS
+// ===============================================
 
 class AuthManager {
     constructor() {
@@ -13,6 +17,7 @@ class AuthManager {
         this.redirectAfterLogin = 'dashboard.html';
         this.currentUser = null;
         this.authChangeCallback = null;
+        this.autoLogoutTimer = null; // ✅ FASE 3: Auto logout
         
         // Carregar usuário do localStorage
         this.loadUserFromStorage();
@@ -21,7 +26,7 @@ class AuthManager {
     }
 
     // ===============================================
-    // VERIFICAÇÕES DE AUTENTICAÇÃO
+    // VERIFICAÇÕES DE AUTENTICAÇÃO - FASE 1
     // ===============================================
 
     // Verificar se está autenticado
@@ -48,7 +53,8 @@ class AuthManager {
         return this.currentUser || this.api.getCurrentUser();
     }
 
-    // Verificar autenticação em páginas protegidas
+    // ✅ FASE 1: Verificação simplificada baseada no Doc III
+    // Lição: "Validação de token deve ser opcional, não automática na proteção de páginas"
     async requireAuth() {
         try {
             // Verificar se tem token
@@ -58,18 +64,13 @@ class AuthManager {
                 return false;
             }
 
-            // Validar token no servidor
-            const validationResult = await this.api.validateToken();
-            if (!validationResult) {
-                console.log('❌ Token inválido - redirecionando para login');
+            // ✅ CORREÇÃO CRÍTICA do Doc III: Não fazer validação automática que causa loops
+            // Apenas verificar se tem usuário carregado
+            const user = this.getCurrentUser();
+            if (!user) {
+                console.log('❌ Dados do usuário não encontrados');
                 this.redirectToLogin();
                 return false;
-            }
-
-            // Atualizar dados do usuário se necessário
-            if (validationResult && validationResult.id) {
-                this.currentUser = validationResult;
-                localStorage.setItem('conductor_user', JSON.stringify(validationResult));
             }
 
             return true;
@@ -82,7 +83,7 @@ class AuthManager {
     }
 
     // ===============================================
-    // VERIFICAÇÕES DE PERMISSÃO
+    // VERIFICAÇÕES DE PERMISSÃO - FASE 1
     // ===============================================
 
     // Verificar permissões específicas
@@ -90,7 +91,7 @@ class AuthManager {
         const isAuth = await this.requireAuth();
         if (!isAuth) return false;
 
-        // ✅ SE FOR VISITANTE E PEDIR 'Usuario', PERMITIR ACESSO
+        // ✅ CORREÇÃO CRÍTICA do Doc III: SE FOR VISITANTE E PEDIR 'Usuario', PERMITIR ACESSO
         const user = this.getCurrentUser();
         if (user?.permissao === 'Visitante' && permission === 'Usuario') {
             console.log('🔓 Visitante acessando dashboard - permitido');
@@ -128,240 +129,291 @@ class AuthManager {
         }
 
         const hasAccess = userLevel >= requiredLevel;
-        console.log(`🔐 Verificação de permissão: ${user.permissao} ${hasAccess ? '✅' : '❌'} ${requiredPermission}`);
+        console.log(`🔐 Verificação de permissão: ${user.permissao} ${hasAccess ? '≥' : '<'} ${requiredPermission} = ${hasAccess ? '✅' : '❌'}`);
         
         return hasAccess;
     }
 
-    // Verificar se é admin
+    // Shortcuts para permissões específicas
     async requireAdmin() {
         return this.requirePermission('Administrador');
     }
 
-    // Verificar se é desenvolvedor
-    async requireDeveloper() {
-        return this.requirePermission('Desenvolvedor');
-    }
-
-    // Verificar se é operador ou superior
     async requireOperator() {
         return this.requirePermission('Operador');
     }
 
-    // Verificar se é usuário ou superior
-    async requireUser() {
-        return this.requirePermission('Usuario');
+    async requireDeveloper() {
+        return this.requirePermission('Desenvolvedor');
     }
 
     // ===============================================
-    // NAVEGAÇÃO E REDIRECIONAMENTO
+    // PROTEÇÃO DE PÁGINAS - FASE 1
     // ===============================================
 
-    // Redirecionar para login
-    redirectToLogin() {
-        const currentPage = window.location.pathname.split('/').pop();
-        if (currentPage !== 'login.html') {
-            console.log('🔄 Redirecionando para página de login');
-            window.location.href = 'login.html';
-        }
-    }
-
-    // Mostrar acesso negado
-    showAccessDenied() {
-        const user = this.getCurrentUser();
-        const userName = user ? user.nome_usuario : 'Usuário';
-        const userPermission = user ? user.permissao : 'Desconhecida';
-        
-        alert(`❌ ACESSO NEGADO!\n\nUsuário: ${userName}\nPermissão: ${userPermission}\n\nVocê não tem permissão para acessar esta página.`);
-        
-        console.log('❌ Acesso negado - redirecionando para dashboard');
-        window.location.href = 'dashboard.html';
-    }
-
-    // Redirecionar após login
-    redirectAfterAuth() {
-        window.location.href = this.redirectAfterLogin;
-    }
-
-    // ===============================================
-    // PROTEÇÃO DE PÁGINAS
-    // ===============================================
-
-    // Proteger página atual (função global para compatibilidade)
     async protectPage(requiredPermission = 'Usuario') {
         return this.requirePermission(requiredPermission);
     }
 
-    // Proteger página de admin
-    async protectAdminPage() {
-        return this.requireAdmin();
-    }
-
-    // Proteger página de desenvolvedor
-    async protectDeveloperPage() {
-        return this.requireDeveloper();
-    }
-
     // ===============================================
-    // GESTÃO DE SESSÃO
+    // GERENCIAMENTO DE SESSÃO - FASE 3
     // ===============================================
 
-    // Auto-logout após inatividade
+    // ✅ FASE 3: Auto-logout por inatividade
     setupAutoLogout(minutes = 60) {
-        let inactivityTimer;
-
-        const resetTimer = () => {
-            clearTimeout(inactivityTimer);
-            inactivityTimer = setTimeout(() => {
-                console.log('⏰ Sessão expirada por inatividade');
-                alert('Sua sessão expirou por inatividade. Você será redirecionado para o login.');
-                this.logout();
-            }, minutes * 60 * 1000);
-        };
-
-        // Eventos para detectar atividade
-        ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(event => {
-            document.addEventListener(event, resetTimer, true);
-        });
-
-        // Iniciar timer
-        resetTimer();
-    }
-
-    // Logout
-    logout() {
-        this.api.removeToken();
-        this.currentUser = null;
-        this.triggerAuthChange();
-        window.location.href = 'login.html';
-    }
-
-    // ===============================================
-    // MÉTODOS DE UI E AVATAR - OS QUE ESTAVAM FALTANDO
-    // ===============================================
-
-    // Obter avatar do usuário (iniciais)
-    getUserAvatar() {
-        const user = this.getCurrentUser();
-        if (!user || !user.nome_usuario) return '?';
+        this.clearAutoLogout();
         
-        return user.nome_usuario
-            .split(' ')
-            .map(word => word.charAt(0).toUpperCase())
-            .join('')
-            .substring(0, 2);
+        const milliseconds = minutes * 60 * 1000;
+        this.autoLogoutTimer = setTimeout(() => {
+            console.log('⏰ Sessão expirada por inatividade');
+            this.logout();
+            alert('Sua sessão expirou devido à inatividade.');
+        }, milliseconds);
+
+        console.log(`⏰ Auto-logout configurado para ${minutes} minutos`);
     }
 
-    // Obter ícone da permissão
-    getPermissionIcon(permission) {
-        const icons = {
-            'Visitante': '👁️',
-            'Usuario': '👤',
-            'Operador': '🔧',
-            'Administrador': '⚙️',
-            'Desenvolvedor': '👨‍💻'
-        };
-        return icons[permission] || '👤';
+    clearAutoLogout() {
+        if (this.autoLogoutTimer) {
+            clearTimeout(this.autoLogoutTimer);
+            this.autoLogoutTimer = null;
+        }
     }
 
-    // Atualizar dados do usuário atual
-    updateCurrentUser(userData) {
-        this.currentUser = userData;
-        localStorage.setItem('conductor_user', JSON.stringify(userData));
-        console.log('👤 Dados do usuário atualizados:', userData);
-        this.triggerAuthChange();
+    // Resetar timer de auto-logout em atividade
+    resetAutoLogout() {
+        if (this.autoLogoutTimer) {
+            this.setupAutoLogout(60); // Reset para 60 minutos
+        }
     }
 
-    // Atualizar informações do usuário na UI
+    // ===============================================
+    // LOGIN E LOGOUT - FASE 1 & 3
+    // ===============================================
+
+    async login(credentials) {
+        try {
+            const response = await this.api.login(credentials);
+            
+            if (response && response.success) {
+                this.currentUser = response.user;
+                this.setupAutoLogout(60); // ✅ FASE 3: Configurar auto-logout
+                
+                // Trigger callback se configurado
+                if (this.authChangeCallback) {
+                    this.authChangeCallback(true, this.currentUser);
+                }
+                
+                console.log('✅ Login realizado via AuthManager');
+                return response;
+            } else {
+                throw new Error('Falha no login');
+            }
+        } catch (error) {
+            console.error('❌ Erro no login AuthManager:', error);
+            throw error;
+        }
+    }
+
+    // ✅ FASE 3: Logout com invalidação backend
+    async logout() {
+        try {
+            // Tentar logout no backend
+            await this.api.logout();
+        } catch (error) {
+            console.warn('⚠️ Erro no logout backend:', error);
+        } finally {
+            // Limpar dados locais
+            this.currentUser = null;
+            this.clearAutoLogout();
+            
+            // Trigger callback se configurado
+            if (this.authChangeCallback) {
+                this.authChangeCallback(false, null);
+            }
+            
+            console.log('✅ Logout realizado');
+            this.redirectToLogin();
+        }
+    }
+
+    // ===============================================
+    // REDIRECIONAMENTOS - FASE 1
+    // ===============================================
+
+    redirectToLogin() {
+        if (window.location.pathname !== '/login.html') {
+            window.location.href = '/login.html';
+        }
+    }
+
+    redirectToDashboard() {
+        if (window.location.pathname !== '/dashboard.html') {
+            window.location.href = this.redirectAfterLogin;
+        }
+    }
+
+    showAccessDenied() {
+        alert('Acesso negado. Você não tem permissão para acessar este recurso.');
+        this.redirectToDashboard();
+    }
+
+    // ===============================================
+    // INTERFACE DO USUÁRIO - FASE 4
+    // ===============================================
+
+    // Atualizar display do usuário na interface
     updateUserDisplay() {
         const user = this.getCurrentUser();
         if (!user) return;
 
-        // Atualizar elementos comuns da UI
+        // ✅ CORREÇÃO CRÍTICA do Doc III: Usar campos corretos
+        // Lição: "Sempre usar nomes exatos dos campos do banco"
+        
+        // Atualizar nome do usuário
         const userNameElements = document.querySelectorAll('[data-user-name]');
-        const userEmailElements = document.querySelectorAll('[data-user-email]');
-        const userPermissionElements = document.querySelectorAll('[data-user-permission]');
-        const userAvatarElements = document.querySelectorAll('[data-user-avatar]');
-
         userNameElements.forEach(el => {
-            el.textContent = user.nome_usuario || 'Usuário';
+            el.textContent = user.nome_usuario; // ✅ nome_usuario, não username
         });
 
+        // Atualizar email do usuário
+        const userEmailElements = document.querySelectorAll('[data-user-email]');
         userEmailElements.forEach(el => {
-            el.textContent = user.email || '';
+            el.textContent = user.email;
         });
 
-        userPermissionElements.forEach(el => {
-            el.textContent = user.permissao || 'Visitante';
-            el.className = `permission-badge permission-${(user.permissao || 'visitante').toLowerCase()}`;
+        // Atualizar permissão
+        const userRoleElements = document.querySelectorAll('[data-user-role]');
+        userRoleElements.forEach(el => {
+            el.textContent = user.permissao; // ✅ permissao, não permission
         });
 
+        // Atualizar avatar
+        const userAvatarElements = document.querySelectorAll('[data-user-avatar]');
         userAvatarElements.forEach(el => {
-            el.textContent = this.getUserAvatar();
+            el.src = this.getUserAvatar(user);
         });
+
+        console.log('🎨 Display do usuário atualizado');
     }
 
-    // Mostrar/ocultar elementos baseado em permissões
+    // ✅ CORREÇÃO CRÍTICA: Avatar local em vez de dependência externa
+    getUserAvatar(user = null) {
+        const currentUser = user || this.getCurrentUser();
+        if (!currentUser) return '/images/default-avatar.png';
+
+        // Gerar iniciais do nome para avatar local
+        const initials = currentUser.nome_usuario
+            ?.split(' ')
+            ?.map(word => word.charAt(0).toUpperCase())
+            ?.slice(0, 2)
+            ?.join('') || 'U';
+        
+        // Retornar path para avatar padrão - sem dependências externas
+        return `/images/avatars/${initials.toLowerCase()}-avatar.png`;
+    }
+
+    // ✅ FASE 4: Ícone baseado na permissão (resolução do Doc III)
+    getPermissionIcon(permission = null) {
+        const userPermission = permission || this.getCurrentUser()?.permissao;
+        
+        const icons = {
+            'Visitante': '👁️',
+            'Usuario': '👤',
+            'Operador': '⚙️',
+            'Administrador': '👑',
+            'Desenvolvedor': '💻'
+        };
+
+        return icons[userPermission] || '👤';
+    }
+
+    // Aplicar visibilidade baseada em permissões
     applyPermissionBasedVisibility() {
         const user = this.getCurrentUser();
         if (!user) return;
 
-        // Elementos que requerem admin
-        const adminElements = document.querySelectorAll('[data-requires="admin"]');
-        adminElements.forEach(el => {
-            el.style.display = this.hasPermission('Administrador') ? '' : 'none';
+        // Elementos que requerem permissões específicas
+        const permissionElements = document.querySelectorAll('[data-requires-permission]');
+        
+        permissionElements.forEach(element => {
+            const requiredPermission = element.getAttribute('data-requires-permission');
+            const hasPermission = this.hasPermission(requiredPermission);
+            
+            if (hasPermission) {
+                element.style.display = '';
+                element.removeAttribute('disabled');
+            } else {
+                element.style.display = 'none';
+                element.setAttribute('disabled', 'disabled');
+            }
         });
 
-        // Elementos que requerem desenvolvedor
-        const devElements = document.querySelectorAll('[data-requires="developer"]');
-        devElements.forEach(el => {
-            el.style.display = this.hasPermission('Desenvolvedor') ? '' : 'none';
-        });
-
-        // Elementos que requerem operador
-        const operatorElements = document.querySelectorAll('[data-requires="operator"]');
-        operatorElements.forEach(el => {
-            el.style.display = this.hasPermission('Operador') ? '' : 'none';
-        });
+        console.log('🔒 Visibilidade baseada em permissões aplicada');
     }
 
     // ===============================================
-    // EVENTOS E CALLBACKS
+    // VALIDAÇÃO DE TOKEN - FASE 1 & 3
     // ===============================================
 
-    // Registrar callback para mudanças de autenticação
+    // ✅ FASE 1: Validação manual de token (para uso específico)
+    async validateCurrentToken() {
+        try {
+            const user = await this.api.validateToken();
+            if (user) {
+                this.currentUser = user;
+                localStorage.setItem('conductor_user', JSON.stringify(user));
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('❌ Erro na validação do token:', error);
+            return false;
+        }
+    }
+
+    // ===============================================
+    // CALLBACKS E EVENTOS - FASE 4
+    // ===============================================
+
+    // Configurar callback para mudanças de autenticação
     onAuthChange(callback) {
-        if (typeof callback === 'function') {
-            this.authChangeCallback = callback;
-        }
+        this.authChangeCallback = callback;
     }
 
-    // Executar callback de mudança de auth
-    triggerAuthChange() {
-        if (this.authChangeCallback) {
-            this.authChangeCallback(this.getCurrentUser());
-        }
+    // ✅ FASE 4: Setup de listeners para atividade do usuário
+    setupActivityListeners() {
+        const activities = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+        
+        const resetTimer = () => this.resetAutoLogout();
+        
+        activities.forEach(activity => {
+            document.addEventListener(activity, resetTimer, { passive: true });
+        });
+
+        console.log('👂 Listeners de atividade configurados');
     }
 
     // ===============================================
-    // MÉTODOS DE DEBUG
+    // DEBUGGING E UTILITÁRIOS - FASE 4
     // ===============================================
 
-    // Debug: Mostrar informações de autenticação
+    // Debug: Imprimir informações de autenticação
     debugAuth() {
         const user = this.getCurrentUser();
-        const token = this.api.token;
         
         console.group('🔍 Debug - Autenticação');
-        console.log('Token:', token ? '✅ Presente' : '❌ Ausente');
-        console.log('Usuário:', user);
         console.log('Autenticado:', this.isAuthenticated());
+        console.log('Token:', this.api.token ? '✅ Presente' : '❌ Ausente');
+        console.log('Usuário:', user);
+        console.log('Permissão:', user?.permissao || 'N/A');
         
         if (user) {
-            console.log('Permissões disponíveis:');
             const permissions = ['Visitante', 'Usuario', 'Operador', 'Administrador', 'Desenvolvedor'];
-            permissions.forEach(perm => {
-                console.log(`  ${perm}: ${this.hasPermission(perm) ? '✅' : '❌'}`);
+            console.log('Verificação de permissões:');
+            permissions.forEach(permission => {
+                const hasAccess = this.hasPermission(permission);
+                console.log(`  ${permission}: ${hasAccess ? '✅' : '❌'}`);
             });
         }
         
@@ -388,7 +440,7 @@ class AuthManager {
 // Criar instância global do AuthManager
 window.authManager = new AuthManager();
 
-// Funções globais para compatibilidade com código existente
+// ✅ CORREÇÃO do Doc III: Funções globais para compatibilidade
 window.protectPage = async function(requiredPermission = 'Usuario') {
     if (window.authManager) {
         // ✅ VISITANTE PODE ACESSAR DASHBOARD SEM PROBLEMAS
@@ -430,7 +482,7 @@ window.logout = function() {
     }
 };
 
-// Auto-setup quando DOM estiver carregado
+// ✅ FASE 4: Auto-setup quando DOM estiver carregado
 document.addEventListener('DOMContentLoaded', () => {
     if (window.authManager) {
         // Atualizar display do usuário
@@ -442,8 +494,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Configurar auto-logout (60 minutos)
         window.authManager.setupAutoLogout(60);
         
+        // Configurar listeners de atividade
+        window.authManager.setupActivityListeners();
+        
         console.log('✅ AuthManager configurado e pronto');
     }
 });
 
-console.log('🔐 AUTH LIMPO carregado!');
+console.log('🔐 AUTH MANAGER COMPLETO carregado!');

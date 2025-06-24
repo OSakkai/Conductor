@@ -1,63 +1,109 @@
 // ===============================================
-// CONDUCTOR - LOGIN PAGE COMPLETO CORRIGIDO
+// CONDUCTOR - LOGIN MANAGER COMPLETO E CORRIGIDO
 // frontend/js/pages/login.js
+// TODAS AS 4 FASES IMPLEMENTADAS
+// SOLUÇÕES DO DOC III APLICADAS
 // ===============================================
 
-class LoginPage {
+class LoginManager {
     constructor() {
-        this.currentTab = 'login';
-        this.api = window.conductorAPI;
-        this.authManager = window.authManager;
-        this.init();
-    }
-
-    init() {
         // Verificar dependências críticas
-        if (!this.api) {
+        if (!window.conductorAPI) {
             console.error('❌ ConductorAPI não encontrado!');
             return;
         }
-
-        if (!this.authManager) {
+        
+        if (!window.authManager) {
             console.error('❌ AuthManager não encontrado!');
             return;
         }
 
-        // Event listeners
-        this.setupEventListeners();
+        this.api = window.conductorAPI;
+        this.authManager = window.authManager;
         
-        // Verificar se já está logado
-        this.checkAuth();
+        // Estado do formulário
+        this.isLoading = false;
+        this.currentMode = 'login'; // 'login' ou 'register'
+        this.lastAttemptTime = 0;
+        this.attemptCount = 0;
         
-        console.log('✅ LoginPage inicializado');
+        console.log('✅ LoginManager inicializado');
     }
 
-    setupEventListeners() {
-        // Formulários
-        const loginForm = document.getElementById('loginForm');
-        const registerForm = document.getElementById('registerForm');
+    // ===============================================
+    // INICIALIZAÇÃO - FASE 1
+    // ===============================================
+
+    async init() {
+        console.log('🔄 Inicializando sistema de login...');
         
+        try {
+            // Verificar se já está autenticado
+            await this.checkAuth();
+            
+            // Setup dos event listeners
+            this.setupEventListeners();
+            
+            // ✅ FASE 4: Setup de validações
+            this.setupValidations();
+            
+            // ✅ FASE 3: Setup de rate limiting client-side
+            this.setupRateLimiting();
+            
+            console.log('✅ Sistema de login inicializado');
+            
+        } catch (error) {
+            console.error('❌ Erro na inicialização do login:', error);
+        }
+    }
+
+    // ===============================================
+    // EVENT LISTENERS - FASE 1 & 4
+    // ===============================================
+
+    setupEventListeners() {
+        // ✅ CORREÇÃO do Doc III: Sempre verificar se preventDefault() está no início
+        // Lição: "Sempre verificar se preventDefault() está no início das funções de submit"
+        
+        // Login form
+        const loginForm = document.getElementById('loginForm');
         if (loginForm) {
             loginForm.addEventListener('submit', (e) => this.handleLogin(e));
         }
-        
+
+        // Register form
+        const registerForm = document.getElementById('registerForm');
         if (registerForm) {
             registerForm.addEventListener('submit', (e) => this.handleRegister(e));
         }
-        
-        // Validação em tempo real
-        const passwordConfirm = document.getElementById('regPasswordConfirm');
-        const accessKey = document.getElementById('accessKey');
-        const regPassword = document.getElementById('regPassword');
-        
-        if (passwordConfirm) {
-            passwordConfirm.addEventListener('input', () => this.validatePasswordMatch());
+
+        // Toggle entre login e registro
+        const showRegister = document.getElementById('showRegister');
+        if (showRegister) {
+            showRegister.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.toggleMode('register');
+            });
         }
-        
-        if (regPassword) {
-            regPassword.addEventListener('input', () => this.validatePasswordMatch());
+
+        const showLogin = document.getElementById('showLogin');
+        if (showLogin) {
+            showLogin.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.toggleMode('login');
+            });
         }
+
+        // ✅ FASE 4: Validações em tempo real
+        this.setupRealTimeValidation();
         
+        console.log('✅ Event listeners configurados');
+    }
+
+    // ✅ FASE 4: Validações em tempo real
+    setupRealTimeValidation() {
+        // Validação de chave de acesso
+        const accessKey = document.getElementById('regAccessKey');
         if (accessKey) {
             accessKey.addEventListener('input', (e) => this.validateAccessKey(e));
         }
@@ -73,17 +119,31 @@ class LoginPage {
         if (regUsername) {
             regUsername.addEventListener('blur', (e) => this.validateUsername(e));
         }
+
+        // Password validation
+        const regPassword = document.getElementById('regPassword');
+        if (regPassword) {
+            regPassword.addEventListener('input', (e) => this.validatePassword(e));
+        }
+
+        // Confirm password validation
+        const regConfirmPassword = document.getElementById('regConfirmPassword');
+        if (regConfirmPassword) {
+            regConfirmPassword.addEventListener('input', (e) => this.validateConfirmPassword(e));
+        }
     }
 
     // ===============================================
-    // VERIFICAÇÃO DE AUTENTICAÇÃO
+    // VERIFICAÇÃO DE AUTENTICAÇÃO - FASE 1
     // ===============================================
 
     async checkAuth() {
         try {
             if (this.authManager.isAuthenticated()) {
-                // Verificar se token é válido
-                const user = await this.api.validateToken();
+                // ✅ CORREÇÃO do Doc III: Não fazer validação automática que causa loops
+                // Lição: "Validação de token deve ser opcional, não automática na proteção de páginas"
+                
+                const user = this.authManager.getCurrentUser();
                 if (user) {
                     console.log('✅ Usuário já autenticado, redirecionando...');
                     this.redirectToDashboard();
@@ -98,13 +158,20 @@ class LoginPage {
     }
 
     // ===============================================
-    // HANDLE LOGIN
+    // HANDLE LOGIN - FASE 1 & 3
     // ===============================================
 
     async handleLogin(event) {
+        // ✅ CORREÇÃO CRÍTICA do Doc III: preventDefault no início
         event.preventDefault();
         
         try {
+            // ✅ FASE 3: Verificar rate limiting
+            if (!this.checkRateLimit()) {
+                this.showMessage('loginMessage', 'Muitas tentativas. Aguarde alguns minutos.', 'error');
+                return;
+            }
+
             const form = event.target;
             const formData = new FormData(form);
             
@@ -113,13 +180,14 @@ class LoginPage {
             this.clearMessage('loginMessage');
 
             const credentials = {
-                username: formData.get('username'),
+                username: formData.get('username')?.trim(),
                 password: formData.get('password')
             };
 
-            // Validar campos
-            if (!credentials.username || !credentials.password) {
-                throw new Error('Por favor, preencha todos os campos');
+            // ✅ FASE 4: Validações melhoradas
+            const validationError = this.validateLoginCredentials(credentials);
+            if (validationError) {
+                throw new Error(validationError);
             }
 
             console.log('🔐 Tentando login para:', credentials.username);
@@ -127,30 +195,76 @@ class LoginPage {
             // Fazer login via API
             const response = await this.api.login(credentials);
             
-            if (response && response.access_token) {
-                this.showMessage('loginMessage', 'Login realizado com sucesso! Redirecionando...', 'success');
+            if (response && response.success) {
+                this.showMessage('loginMessage', 'Login realizado com sucesso!', 'success');
                 
-                // Aguardar um momento para mostrar a mensagem
-                setTimeout(() => {
-                    this.redirectToDashboard();
-                }, 1000);
+                // ✅ FASE 1: Atualizar AuthManager
+                this.authManager.currentUser = response.user;
+                
+                // Reset rate limiting em sucesso
+                this.resetRateLimit();
+                
+                // Aguardar um momento antes de redirecionar
+                setTimeout(() => this.redirectToDashboard(), 1000);
                 
             } else {
-                throw new Error(response?.message || 'Credenciais inválidas');
+                throw new Error(response.message || 'Falha no login');
             }
-
+            
         } catch (error) {
             console.error('❌ Erro no login:', error);
-            this.showMessage('loginMessage', 'Erro no login: ' + error.message, 'danger');
+            
+            // ✅ FASE 3: Registrar tentativa falhada
+            this.recordFailedAttempt();
+            
+            // ✅ FASE 4: Mostrar mensagem específica
+            const errorMessage = this.getLoginErrorMessage(error.message);
+            this.showMessage('loginMessage', errorMessage, 'error');
+            
+        } finally {
             this.setFormLoading('loginForm', false);
         }
     }
 
+    // ✅ FASE 4: Validação de credenciais de login
+    validateLoginCredentials(credentials) {
+        if (!credentials.username) {
+            return 'Por favor, insira seu nome de usuário';
+        }
+        
+        if (!credentials.password) {
+            return 'Por favor, insira sua senha';
+        }
+        
+        if (credentials.username.length < 3) {
+            return 'Nome de usuário deve ter pelo menos 3 caracteres';
+        }
+        
+        // ✅ CORREÇÃO: Removida validação de 6 caracteres mínimos na senha
+        // A validação de senha será feita apenas no backend
+        
+        return null;
+    }
+
+    // ✅ FASE 4: Mensagens de erro específicas
+    getLoginErrorMessage(error) {
+        const errorMessages = {
+            'Credenciais inválidas': 'Usuário ou senha incorretos',
+            'Conta inativa ou bloqueada': 'Sua conta foi desativada. Entre em contato com o administrador.',
+            'Usuário não encontrado': 'Usuário não existe no sistema',
+            'Muitas tentativas': 'Muitas tentativas de login. Tente novamente em alguns minutos.',
+            'Erro de conexão': 'Problema de conexão. Verifique sua internet e tente novamente.',
+        };
+
+        return errorMessages[error] || 'Erro no login. Verifique seus dados e tente novamente.';
+    }
+
     // ===============================================
-    // HANDLE REGISTER
+    // HANDLE REGISTER - FASE 1 & 4
     // ===============================================
 
     async handleRegister(event) {
+        // ✅ CORREÇÃO CRÍTICA do Doc III: preventDefault no início
         event.preventDefault();
         
         try {
@@ -161,437 +275,378 @@ class LoginPage {
             this.setFormLoading('registerForm', true);
             this.clearMessage('registerMessage');
 
-            // ✅ CORREÇÃO: Mapear campos corretamente para backend
+            // ✅ FASE 2: Coletar dados usando campos corretos do backend
             const userData = {
-                nome_usuario: formData.get('username'),
-                email: formData.get('email'),
+                nome_usuario: formData.get('username')?.trim(), // ✅ nome_usuario
+                email: formData.get('email')?.trim(),
+                celular: formData.get('phone')?.trim(), // ✅ celular
+                funcao: formData.get('role'),
                 senha: formData.get('password'),
-                funcao: formData.get('funcao') || 'Estagiario',
-                chave_acesso: formData.get('accessKey') || null
+                chave_acesso: formData.get('accessKey')?.trim()
             };
 
-            // Validar campos obrigatórios
-            if (!userData.nome_usuario || !userData.email || !userData.senha) {
-                throw new Error('Por favor, preencha todos os campos obrigatórios');
+            // ✅ FASE 4: Validações completas
+            const validationError = this.validateRegistrationData(userData, formData.get('confirmPassword'));
+            if (validationError) {
+                throw new Error(validationError);
             }
 
-            // Validar confirmação de senha
-            const passwordConfirm = formData.get('passwordConfirm');
-            if (userData.senha !== passwordConfirm) {
-                throw new Error('As senhas não coincidem');
-            }
-
-            // Validar email
-            if (!this.isValidEmail(userData.email)) {
-                throw new Error('Email inválido');
-            }
-
-            // Validar chave de acesso se fornecida
-            if (userData.chave_acesso) {
-                const isKeyValid = await this.validateKeyWithBackend(userData.chave_acesso);
-                if (!isKeyValid) {
-                    throw new Error('Chave de acesso inválida');
-                }
-            }
-
-            console.log('📝 Criando conta para:', userData.nome_usuario);
+            console.log('📝 Tentando registro para:', userData.nome_usuario);
 
             // Fazer registro via API
             const response = await this.api.register(userData);
             
-            if (response && response.message) {
-                this.showMessage('registerMessage', response.message + ' Redirecionando para login...', 'success');
+            if (response && response.success) {
+                this.showMessage('registerMessage', 'Usuário registrado com sucesso! Faça login para continuar.', 'success');
                 
                 // Limpar formulário
                 form.reset();
                 
-                // Aguardar e redirecionar para tab de login
-                setTimeout(() => {
-                    this.switchToLogin();
-                }, 2000);
+                // Voltar para o modo login após 2 segundos
+                setTimeout(() => this.toggleMode('login'), 2000);
                 
             } else {
-                throw new Error(response?.message || 'Erro ao criar conta');
+                throw new Error(response.message || 'Falha no registro');
             }
-
+            
         } catch (error) {
             console.error('❌ Erro no registro:', error);
-            this.showMessage('registerMessage', 'Erro no registro: ' + error.message, 'danger');
+            this.showMessage('registerMessage', error.message, 'error');
+            
+        } finally {
             this.setFormLoading('registerForm', false);
         }
     }
 
-    // ===============================================
-    // VALIDAÇÕES
-    // ===============================================
-
-    validatePasswordMatch() {
-        const password = document.getElementById('regPassword');
-        const passwordConfirm = document.getElementById('regPasswordConfirm');
-        
-        if (!password || !passwordConfirm) return;
-
-        const isMatch = password.value === passwordConfirm.value;
-        const hasValue = passwordConfirm.value.length > 0;
-
-        // Remover classes anteriores
-        passwordConfirm.classList.remove('is-valid', 'is-invalid');
-
-        if (hasValue) {
-            if (isMatch) {
-                passwordConfirm.classList.add('is-valid');
-            } else {
-                passwordConfirm.classList.add('is-invalid');
-            }
+    // ✅ FASE 4: Validação completa de dados de registro
+    validateRegistrationData(userData, confirmPassword) {
+        // Validar nome de usuário
+        if (!userData.nome_usuario) {
+            return 'Nome de usuário é obrigatório';
+        }
+        if (userData.nome_usuario.length < 3) {
+            return 'Nome de usuário deve ter pelo menos 3 caracteres';
+        }
+        if (!/^[a-zA-Z0-9_]+$/.test(userData.nome_usuario)) {
+            return 'Nome de usuário pode conter apenas letras, números e underscore';
         }
 
-        // Validar força da senha
-        this.validatePasswordStrength(password.value);
-    }
-
-    validatePasswordStrength(password) {
-        const passwordField = document.getElementById('regPassword');
-        if (!passwordField || !password) return;
-
-        // Critérios de senha forte
-        const minLength = password.length >= 6;
-        const hasNumber = /\d/.test(password);
-        const hasLetter = /[a-zA-Z]/.test(password);
-
-        const isStrong = minLength && hasNumber && hasLetter;
-
-        passwordField.classList.remove('is-valid', 'is-invalid');
-
-        if (password.length > 0) {
-            if (isStrong) {
-                passwordField.classList.add('is-valid');
-            } else if (password.length < 6) {
-                passwordField.classList.add('is-invalid');
-            }
+        // Validar email
+        if (!userData.email) {
+            return 'Email é obrigatório';
         }
+        if (!this.isValidEmail(userData.email)) {
+            return 'Email inválido';
+        }
+
+        // Validar função
+        if (!userData.funcao) {
+            return 'Função é obrigatória';
+        }
+
+        // Validar senha
+        if (!userData.senha) {
+            return 'Senha é obrigatória';
+        }
+        // ✅ CORREÇÃO: Removida validação de 6 caracteres mínimos
+        // Validação será feita apenas no backend
+
+        // Validar confirmação de senha
+        if (userData.senha !== confirmPassword) {
+            return 'Senhas não coincidem';
+        }
+
+        // Validar celular se fornecido
+        if (userData.celular && !this.isValidPhone(userData.celular)) {
+            return 'Celular inválido';
+        }
+
+        return null;
     }
+
+    // ===============================================
+    // VALIDAÇÕES INDIVIDUAIS - FASE 4
+    // ===============================================
 
     async validateAccessKey(event) {
-        const accessKey = event.target;
-        const value = accessKey.value.trim();
-
-        // Remover classes anteriores
-        accessKey.classList.remove('is-valid', 'is-invalid');
-
-        if (value.length === 0) {
-            // Chave opcional - não mostrar erro
+        const input = event.target;
+        const key = input.value.trim();
+        
+        if (!key) {
+            this.setInputStatus(input, 'neutral');
             return;
         }
 
         try {
-            // Validar formato (16 caracteres alfanuméricos)
-            if (!/^[A-Z0-9]{16}$/.test(value)) {
-                accessKey.classList.add('is-invalid');
-                return;
-            }
-
-            // Validar com backend
-            const isValid = await this.validateKeyWithBackend(value);
+            this.setInputStatus(input, 'loading');
             
-            if (isValid) {
-                accessKey.classList.add('is-valid');
+            const response = await this.api.validateKey(key);
+            
+            if (response && response.success) {
+                this.setInputStatus(input, 'success', 'Chave válida');
             } else {
-                accessKey.classList.add('is-invalid');
+                this.setInputStatus(input, 'error', 'Chave inválida');
             }
-
         } catch (error) {
-            console.error('❌ Erro ao validar chave:', error);
-            accessKey.classList.add('is-invalid');
-        }
-    }
-
-    async validateKeyWithBackend(keyCode) {
-        try {
-            const response = await this.api.validateKey(keyCode);
-            return response && response.isValid;
-        } catch (error) {
-            console.error('❌ Erro na validação da chave:', error);
-            return false;
+            this.setInputStatus(input, 'error', 'Erro ao validar chave');
         }
     }
 
     validateEmail(event) {
-        const emailField = event.target;
-        const email = emailField.value.trim();
+        const input = event.target;
+        const email = input.value.trim();
+        
+        if (!email) {
+            this.setInputStatus(input, 'neutral');
+            return;
+        }
 
-        emailField.classList.remove('is-valid', 'is-invalid');
-
-        if (email.length > 0) {
-            if (this.isValidEmail(email)) {
-                emailField.classList.add('is-valid');
-            } else {
-                emailField.classList.add('is-invalid');
-            }
+        if (this.isValidEmail(email)) {
+            this.setInputStatus(input, 'success');
+        } else {
+            this.setInputStatus(input, 'error', 'Email inválido');
         }
     }
 
     validateUsername(event) {
-        const usernameField = event.target;
-        const username = usernameField.value.trim();
+        const input = event.target;
+        const username = input.value.trim();
+        
+        if (!username) {
+            this.setInputStatus(input, 'neutral');
+            return;
+        }
 
-        usernameField.classList.remove('is-valid', 'is-invalid');
-
-        if (username.length > 0) {
-            // Validar formato: letras, números, underscore
-            const isValidFormat = /^[a-zA-Z0-9_]{3,20}$/.test(username);
-            
-            if (isValidFormat) {
-                usernameField.classList.add('is-valid');
-            } else {
-                usernameField.classList.add('is-invalid');
-            }
+        if (username.length < 3) {
+            this.setInputStatus(input, 'error', 'Mínimo 3 caracteres');
+        } else if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+            this.setInputStatus(input, 'error', 'Apenas letras, números e _');
+        } else {
+            this.setInputStatus(input, 'success');
         }
     }
+
+    validatePassword(event) {
+        const input = event.target;
+        const password = input.value;
+        
+        if (!password) {
+            this.setInputStatus(input, 'neutral');
+            return;
+        }
+
+        // ✅ CORREÇÃO: Removida validação de 6 caracteres mínimos
+        // Validação será feita apenas no backend
+        this.setInputStatus(input, 'success');
+        
+        // Validar confirmação se já preenchida
+        const confirmInput = document.getElementById('regConfirmPassword');
+        if (confirmInput && confirmInput.value) {
+            this.validateConfirmPassword({ target: confirmInput });
+        }
+    }
+
+    validateConfirmPassword(event) {
+        const input = event.target;
+        const confirmPassword = input.value;
+        const passwordInput = document.getElementById('regPassword');
+        
+        if (!confirmPassword) {
+            this.setInputStatus(input, 'neutral');
+            return;
+        }
+
+        if (!passwordInput) {
+            this.setInputStatus(input, 'error', 'Campo senha não encontrado');
+            return;
+        }
+
+        if (confirmPassword === passwordInput.value) {
+            this.setInputStatus(input, 'success');
+        } else {
+            this.setInputStatus(input, 'error', 'Senhas não coincidem');
+        }
+    }
+
+    // ===============================================
+    // UTILITÁRIOS DE VALIDAÇÃO - FASE 4
+    // ===============================================
 
     isValidEmail(email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
     }
 
-    // ===============================================
-    // UI E MENSAGENS
-    // ===============================================
+    isValidPhone(phone) {
+        // Aceitar formatos brasileiros básicos
+        const phoneRegex = /^[\(\)0-9\-\+\s]+$/;
+        const cleaned = phone.replace(/\D/g, '');
+        return phoneRegex.test(phone) && cleaned.length >= 10 && cleaned.length <= 11;
+    }
 
-    showMessage(containerId, message, type) {
-        const container = document.getElementById(containerId);
-        if (!container) return;
+    setInputStatus(input, status, message = '') {
+        // Remover classes de status anteriores
+        input.classList.remove('input-success', 'input-error', 'input-loading');
         
-        const alertClass = {
-            'success': 'alert-success',
-            'danger': 'alert-danger',
-            'warning': 'alert-warning',
-            'info': 'alert-info'
-        };
-
-        container.innerHTML = `
-            <div class="alert ${alertClass[type]} alert-dismissible fade show" role="alert">
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        `;
-
-        // Auto-hide after 5 seconds (except for errors)
-        if (type !== 'danger') {
-            setTimeout(() => {
-                const alert = container.querySelector('.alert');
-                if (alert) {
-                    alert.remove();
-                }
-            }, 5000);
+        // Adicionar nova classe
+        if (status !== 'neutral') {
+            input.classList.add(`input-${status}`);
         }
+
+        // Atualizar mensagem de feedback
+        const feedbackId = input.id + 'Feedback';
+        let feedback = document.getElementById(feedbackId);
+        
+        if (!feedback) {
+            feedback = document.createElement('div');
+            feedback.id = feedbackId;
+            feedback.className = 'input-feedback';
+            input.parentNode.appendChild(feedback);
+        }
+
+        feedback.textContent = message;
+        feedback.className = `input-feedback ${status}`;
     }
 
-    clearMessage(containerId) {
-        const container = document.getElementById(containerId);
-        if (container) {
-            container.innerHTML = '';
-        }
+    // ===============================================
+    // RATE LIMITING CLIENT-SIDE - FASE 3
+    // ===============================================
+
+    setupRateLimiting() {
+        this.maxAttempts = 5;
+        this.lockoutTime = 5 * 60 * 1000; // 5 minutos
+        this.attemptWindow = 60 * 1000; // 1 minuto
     }
 
-    setFormLoading(formId, isLoading) {
+    checkRateLimit() {
+        const now = Date.now();
+        
+        // Limpar tentativas antigas
+        if (now - this.lastAttemptTime > this.attemptWindow) {
+            this.attemptCount = 0;
+        }
+
+        return this.attemptCount < this.maxAttempts;
+    }
+
+    recordFailedAttempt() {
+        this.attemptCount++;
+        this.lastAttemptTime = Date.now();
+        
+        console.log(`⚠️ Tentativa falhada ${this.attemptCount}/${this.maxAttempts}`);
+    }
+
+    resetRateLimit() {
+        this.attemptCount = 0;
+        this.lastAttemptTime = 0;
+    }
+
+    // ===============================================
+    // INTERFACE E UTILITÁRIOS - FASE 1 & 4
+    // ===============================================
+
+    toggleMode(mode) {
+        this.currentMode = mode;
+        
+        const loginSection = document.getElementById('loginSection');
+        const registerSection = document.getElementById('registerSection');
+        
+        if (mode === 'login') {
+            if (loginSection) loginSection.style.display = 'block';
+            if (registerSection) registerSection.style.display = 'none';
+        } else {
+            if (loginSection) loginSection.style.display = 'none';
+            if (registerSection) registerSection.style.display = 'block';
+        }
+
+        // Limpar mensagens
+        this.clearMessage('loginMessage');
+        this.clearMessage('registerMessage');
+        
+        console.log(`🔄 Modo alterado para: ${mode}`);
+    }
+
+    setFormLoading(formId, loading) {
         const form = document.getElementById(formId);
         if (!form) return;
 
+        this.isLoading = loading;
+        
         const submitButton = form.querySelector('button[type="submit"]');
-        const spinner = form.querySelector('.spinner-border');
-
+        const inputs = form.querySelectorAll('input, select, button');
+        
+        inputs.forEach(input => {
+            input.disabled = loading;
+        });
+        
         if (submitButton) {
-            submitButton.disabled = isLoading;
-        }
-
-        if (spinner) {
-            if (isLoading) {
-                spinner.classList.remove('d-none');
+            if (loading) {
+                submitButton.textContent = 'Carregando...';
+                submitButton.classList.add('loading');
             } else {
-                spinner.classList.add('d-none');
+                const originalText = formId === 'loginForm' ? 'Entrar' : 'Cadastrar';
+                submitButton.textContent = originalText;
+                submitButton.classList.remove('loading');
             }
         }
-
-        // Desabilitar todos os inputs
-        const inputs = form.querySelectorAll('input, select, textarea');
-        inputs.forEach(input => {
-            input.disabled = isLoading;
-        });
     }
 
-    // ===============================================
-    // NAVEGAÇÃO
-    // ===============================================
+    showMessage(elementId, message, type = 'info') {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+
+        element.textContent = message;
+        element.className = `message ${type}`;
+        element.style.display = 'block';
+        
+        // ✅ FASE 4: Auto-hide para mensagens de sucesso
+        if (type === 'success') {
+            setTimeout(() => this.clearMessage(elementId), 5000);
+        }
+    }
+
+    clearMessage(elementId) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.textContent = '';
+            element.style.display = 'none';
+            element.className = 'message';
+        }
+    }
 
     redirectToDashboard() {
-        const user = this.authManager.getCurrentUser();
-        
-        // Redirecionar baseado na permissão
-        if (user && user.permissao === 'Administrador') {
-            window.location.href = 'admin.html';
-        } else {
-            window.location.href = 'dashboard.html';
-        }
-    }
-
-    switchToLogin() {
-        // Trocar para tab de login
-        const loginTab = document.querySelector('#login-tab');
-        if (loginTab) {
-            const tab = new bootstrap.Tab(loginTab);
-            tab.show();
-        }
-        
-        this.currentTab = 'login';
-        this.clearMessage('registerMessage');
-    }
-
-    switchToRegister() {
-        // Trocar para tab de registro
-        const registerTab = document.querySelector('#register-tab');
-        if (registerTab) {
-            const tab = new bootstrap.Tab(registerTab);
-            tab.show();
-        }
-        
-        this.currentTab = 'register';
-        this.clearMessage('loginMessage');
-    }
-
-    // Método para trocar tabs (compatibilidade)
-    showTab(tabName) {
-        this.currentTab = tabName;
-        
-        // Limpar mensagens ao trocar de tab
-        this.clearMessage('loginMessage');
-        this.clearMessage('registerMessage');
-        
-        // Limpar validações
-        const forms = document.querySelectorAll('#loginForm, #registerForm');
-        forms.forEach(form => {
-            const inputs = form.querySelectorAll('.is-valid, .is-invalid');
-            inputs.forEach(input => {
-                input.classList.remove('is-valid', 'is-invalid');
-            });
-        });
+        console.log('🏠 Redirecionando para dashboard...');
+        window.location.href = 'dashboard.html';
     }
 
     // ===============================================
-    // SISTEMA DE TOASTS
+    // SETUP INICIAL - FASE 4
     // ===============================================
 
-    showToast(message, type = 'info') {
-        const toastContainer = document.getElementById('toastContainer');
-        if (!toastContainer) return;
-
-        const toastId = 'toast_' + Date.now();
-        
-        const bgClass = {
-            'success': 'bg-success',
-            'danger': 'bg-danger',
-            'warning': 'bg-warning',
-            'info': 'bg-info'
-        };
-
-        const toastHTML = `
-            <div id="${toastId}" class="toast" role="alert">
-                <div class="toast-header ${bgClass[type]} text-white">
-                    <strong class="me-auto">CONDUCTOR</strong>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-                </div>
-                <div class="toast-body">
-                    ${message}
-                </div>
-            </div>
-        `;
-
-        toastContainer.insertAdjacentHTML('beforeend', toastHTML);
-
-        const toastElement = document.getElementById(toastId);
-        const toast = new bootstrap.Toast(toastElement, {
-            autohide: true,
-            delay: 5000
-        });
-
-        toast.show();
-
-        // Remover elemento após esconder
-        toastElement.addEventListener('hidden.bs.toast', () => {
-            toastElement.remove();
-        });
-    }
-
-    // ===============================================
-    // MÉTODOS DE DEBUG
-    // ===============================================
-
-    debugFormData(formId) {
-        const form = document.getElementById(formId);
-        if (!form) return;
-
-        const formData = new FormData(form);
-        const data = {};
-        
-        for (let [key, value] of formData.entries()) {
-            data[key] = value;
-        }
-
-        console.group(`🔍 Debug - Dados do formulário ${formId}`);
-        console.table(data);
-        console.groupEnd();
-    }
-
-    testValidations() {
-        console.group('🔍 Debug - Testando validações');
-        
-        // Testar email
-        console.log('Email válido (test@test.com):', this.isValidEmail('test@test.com'));
-        console.log('Email inválido (test):', this.isValidEmail('test'));
-        
-        // Testar validação de chave (mock)
-        console.log('Formato de chave válido:', /^[A-Z0-9]{16}$/.test('ABCD1234EFGH5678'));
-        console.log('Formato de chave inválido:', /^[A-Z0-9]{16}$/.test('abc123'));
-        
-        console.groupEnd();
+    setupValidations() {
+        // ✅ CORREÇÃO CRÍTICA: CSS removido - deve ficar separado conforme arquitetura
+        // CSS para validações deve ser adicionado em /css/pages/login.css
+        console.log('⚠️ Estilos de validação devem ser implementados em /css/pages/login.css');
+        console.log('   Classes necessárias: .input-success, .input-error, .input-loading, .input-feedback');
     }
 }
 
 // ===============================================
-// INICIALIZAÇÃO GLOBAL
+// INSTÂNCIA GLOBAL E INICIALIZAÇÃO
 // ===============================================
 
-// Aguardar DOM e dependências
-document.addEventListener('DOMContentLoaded', () => {
-    // Verificar se dependências estão disponíveis
-    if (!window.conductorAPI) {
-        console.error('❌ ConductorAPI não disponível');
-        return;
-    }
-
-    if (!window.authManager) {
-        console.error('❌ AuthManager não disponível');
-        return;
-    }
+// Aguardar DOM e dependências estarem prontas
+document.addEventListener('DOMContentLoaded', async () => {
+    // Aguardar um frame para garantir que todas as dependências estejam carregadas
+    await new Promise(resolve => requestAnimationFrame(resolve));
     
-    // Inicializar LoginPage
-    const loginPage = new LoginPage();
-    
-    // Disponibilizar globalmente para debug
-    window.loginPage = loginPage;
-    
-    console.log('✅ LoginPage inicializado completamente');
-});
-
-// Event listener para mudança de tabs (Bootstrap)
-document.addEventListener('shown.bs.tab', (e) => {
-    if (window.loginPage) {
-        const tabId = e.target.getAttribute('data-bs-target');
-        if (tabId === '#login-pane') {
-            window.loginPage.showTab('login');
-        } else if (tabId === '#register-pane') {
-            window.loginPage.showTab('register');
-        }
+    if (window.conductorAPI && window.authManager) {
+        window.loginManager = new LoginManager();
+        await window.loginManager.init();
+        console.log('✅ LoginManager inicializado e pronto');
+    } else {
+        console.error('❌ Dependências não disponíveis para LoginManager');
     }
 });
 
-console.log('🔐 CONDUCTOR - Login.js FINAL carregado!');
+console.log('🔐 LOGIN MANAGER COMPLETO carregado!');
