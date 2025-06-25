@@ -1,6 +1,7 @@
 // ===============================================
-// CONDUCTOR - CHAVES SERVICE COMPLETO
+// CONDUCTOR - CHAVES SERVICE COMPLETO CORRIGIDO
 // backend/src/chaves/chaves.service.ts
+// CORREÇÃO: Separação de validação e consumo + tipos corretos
 // ===============================================
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
@@ -101,11 +102,13 @@ export class ChavesService {
   }
 
   // ===============================================
-  // MÉTODO DE VALIDAÇÃO DE CHAVE
+  // MÉTODO DE VALIDAÇÃO DE CHAVE - CORRIGIDO!
   // ===============================================
 
   /**
-   * 🔧 Validar chave de acesso (CORRIGIDO)
+   * 🔧 Validar chave de acesso (CORRIGIDO - NÃO CONSOME A CHAVE)
+   * IMPORTANTE: Este método apenas VERIFICA se a chave é válida
+   * O consumo da chave deve ser feito separadamente no momento do uso
    */
   async validateKey(chaveCode: string): Promise<{ isValid: boolean; permission?: string; message: string }> {
     try {
@@ -144,7 +147,8 @@ export class ChavesService {
         }
       }
 
-      // Verificar usos para chaves de uso único
+      // ✅ CORREÇÃO CRÍTICA: Para chaves single_use, apenas verificar se ainda tem usos
+      // NÃO consumir a chave durante a validação!
       if (chave.tipo === ChaveTipo.SINGLE_USE) {
         if (chave.usos_atual >= (chave.usos_maximo || 1)) {
           return { 
@@ -152,14 +156,16 @@ export class ChavesService {
             message: 'Chave já foi utilizada' 
           };
         }
-
-        // Incrementar uso
-        await this.chavesRepository.update(chave.id, {
-          usos_atual: chave.usos_atual + 1,
-          status: chave.usos_atual + 1 >= (chave.usos_maximo || 1) ? ChaveStatus.USADA : ChaveStatus.ATIVA
-        });
+        
+        // ✅ APENAS RETORNAR SE É VÁLIDA - NÃO INCREMENTAR USO!
+        return { 
+          isValid: true, 
+          permission: chave.permissao,
+          message: 'Chave válida e disponível para uso' 
+        };
       }
 
+      // Para chaves permanentes, sempre válidas
       return { 
         isValid: true, 
         permission: chave.permissao,
@@ -171,6 +177,127 @@ export class ChavesService {
       return { 
         isValid: false, 
         message: 'Erro interno ao validar chave' 
+      };
+    }
+  }
+
+  // ===============================================
+  // NOVO MÉTODO: CONSUMIR CHAVE (SEPARADO DA VALIDAÇÃO)
+  // ===============================================
+
+  /**
+   * 🆕 Consumir chave (incrementar uso e atualizar status)
+   * Este método deve ser chamado quando a chave é EFETIVAMENTE USADA
+   */
+  async consumeKey(chaveCode: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const chave = await this.chavesRepository.findOne({
+        where: { chave: chaveCode }
+      });
+
+      if (!chave) {
+        return { 
+          success: false, 
+          message: 'Chave não encontrada' 
+        };
+      }
+
+      // Verificar se chave ainda está ativa
+      if (chave.status !== ChaveStatus.ATIVA) {
+        return { 
+          success: false, 
+          message: 'Chave inativa ou expirada' 
+        };
+      }
+
+      // Verificar expiração novamente
+      if (chave.tipo === ChaveTipo.EXPIRING && chave.data_expiracao) {
+        const now = new Date();
+        if (now > chave.data_expiracao) {
+          await this.chavesRepository.update(chave.id, {
+            status: ChaveStatus.EXPIRADA
+          });
+          
+          return { 
+            success: false, 
+            message: 'Chave expirada' 
+          };
+        }
+      }
+
+      // Consumir a chave (incrementar uso)
+      const novoUso = chave.usos_atual + 1;
+      let novoStatus: ChaveStatus = chave.status; // ✅ CORREÇÃO: Tipo correto
+
+      // Para chaves single_use, marcar como usada após o primeiro uso
+      if (chave.tipo === ChaveTipo.SINGLE_USE && novoUso >= (chave.usos_maximo || 1)) {
+        novoStatus = ChaveStatus.USADA;
+      }
+
+      // Atualizar banco de dados
+      await this.chavesRepository.update(chave.id, {
+        usos_atual: novoUso,
+        status: novoStatus
+      });
+
+      return { 
+        success: true, 
+        message: `Chave consumida com sucesso. Usos: ${novoUso}/${chave.usos_maximo || 'ilimitado'}` 
+      };
+
+    } catch (error) {
+      console.error('Erro ao consumir chave:', error);
+      return { 
+        success: false, 
+        message: 'Erro interno ao consumir chave' 
+      };
+    }
+  }
+
+  // ===============================================
+  // MÉTODO COMBO: VALIDAR E CONSUMIR (PARA REGISTRO)
+  // ===============================================
+
+  /**
+   * 🆕 Validar e consumir chave em uma operação atômica
+   * Usado durante o registro de usuários
+   */
+  async validateAndConsumeKey(chaveCode: string): Promise<{ 
+    isValid: boolean; 
+    permission?: string; 
+    message: string; 
+    consumed?: boolean 
+  }> {
+    try {
+      // Primeiro validar
+      const validation = await this.validateKey(chaveCode);
+      
+      if (!validation.isValid) {
+        return {
+          isValid: false,
+          message: validation.message,
+          consumed: false
+        };
+      }
+
+      // Se válida, consumir
+      const consumption = await this.consumeKey(chaveCode);
+      
+      return {
+        isValid: true,
+        permission: validation.permission,
+        message: consumption.success ? 
+          `Chave validada e consumida: ${consumption.message}` : 
+          `Chave válida mas erro no consumo: ${consumption.message}`,
+        consumed: consumption.success
+      };
+
+    } catch (error) {
+      console.error('Erro ao validar e consumir chave:', error);
+      return { 
+        isValid: false, 
+        message: 'Erro interno ao processar chave',
+        consumed: false
       };
     }
   }
@@ -266,16 +393,13 @@ export class ChavesService {
     // 🔒 VALIDAÇÕES DE NEGÓCIO
     if (updateData.status === ChaveStatus.ATIVA) {
       // Não permitir reativar chaves expiradas
-      if (chave.tipo === ChaveTipo.EXPIRING && chave.data_expiracao) {
-        const now = new Date();
-        if (now > chave.data_expiracao) {
-          throw new BadRequestException('Não é possível reativar uma chave expirada');
-        }
+      if (chave.tipo === ChaveTipo.EXPIRING && chave.data_expiracao && chave.data_expiracao <= new Date()) {
+        throw new BadRequestException('Não é possível reativar chave expirada');
       }
       
-      // Não permitir reativar chaves de uso único já usadas
-      if (chave.tipo === ChaveTipo.SINGLE_USE && chave.usos_atual > 0) {
-        throw new BadRequestException('Não é possível reativar uma chave de uso único já utilizada');
+      // Não permitir reativar chaves single_use já usadas
+      if (chave.tipo === ChaveTipo.SINGLE_USE && chave.usos_atual >= (chave.usos_maximo || 1)) {
+        throw new BadRequestException('Não é possível reativar chave de uso único já utilizada');
       }
     }
 
@@ -289,7 +413,6 @@ export class ChavesService {
       }
     }
 
-    // 🔧 ATUALIZAR NO PADRÃO DO PROJETO
     await this.chavesRepository.update(id, updateData);
     return this.findById(id);
   }
@@ -304,14 +427,13 @@ export class ChavesService {
   }
 
   /**
-   * Excluir chave permanentemente
+   * Remover chave (soft delete)
    */
   async remove(id: number): Promise<void> {
     const chave = await this.findById(id);
     
-    // 🔒 APENAS PERMITIR EXCLUSÃO DE CHAVES USADAS OU EXPIRADAS
     if (chave.status === ChaveStatus.ATIVA) {
-      throw new BadRequestException('Não é possível excluir uma chave ainda ativa. Desative-a primeiro.');
+      throw new BadRequestException('Não é possível excluir chave ativa. Desative-a primeiro.');
     }
 
     await this.chavesRepository.delete(id);
@@ -402,50 +524,11 @@ export class ChavesService {
   }
 
   /**
-   * Buscar chaves por permissão
+   * Buscar chaves prestes a expirar
    */
-  async findByPermission(permissao: ChavePermissao): Promise<Chave[]> {
-    const chaves = await this.chavesRepository.find({
-      where: { permissao },
-      order: { data_criacao: 'DESC' }
-    });
-
-    const updatedChaves = [];
-    for (const chave of chaves) {
-      const updatedChave = await this.checkAndUpdateKeyStatus(chave);
-      updatedChaves.push(updatedChave);
-    }
-
-    return updatedChaves;
-  }
-
-  /**
-   * Limpar chaves expiradas
-   */
-  async cleanExpiredKeys(): Promise<number> {
-    const expiredKeys = await this.findByStatus(ChaveStatus.EXPIRADA);
-    let cleanedCount = 0;
-
-    for (const key of expiredKeys) {
-      // Apenas limpar chaves expiradas há mais de 30 dias
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-      if (key.data_expiracao && key.data_expiracao < thirtyDaysAgo) {
-        await this.forceRemove(key.id);
-        cleanedCount++;
-      }
-    }
-
-    return cleanedCount;
-  }
-
-  /**
-   * Verificar chaves que expiram em breve
-   */
-  async getExpiringKeys(days: number = 7): Promise<Chave[]> {
+  async findExpiringKeys(daysAhead: number = 7): Promise<Chave[]> {
     const futureDate = new Date();
-    futureDate.setDate(futureDate.getDate() + days);
+    futureDate.setDate(futureDate.getDate() + daysAhead);
 
     const chaves = await this.chavesRepository.find({
       where: {

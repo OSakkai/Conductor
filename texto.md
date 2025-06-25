@@ -1,110 +1,195 @@
-# CADERNO DE ERROS v0.4 - CONDUCTOR
-## (Error tracking and resolution log)
-## Última atualização: 2025-06-24 12:55:00
+# CONDUCTOR AI OPERATION PROTOCOL v2.0
 
----
+## CORE EXECUTION PRINCIPLES
 
-## ERROR LOG
+### P0: DATA INTEGRITY VALIDATION (MANDATORY)
+Before any technical debugging, validate test scenario accuracy.
+- Step 1: Confirm test credentials/data are correct
+- Step 2: If unknown, create fresh test data with known values  
+- Step 3: Test with controlled data before debugging system
+- Step 4: Only proceed to technical investigation if controlled test fails
 
-| Erro | Data | Area | Resolução | Lição |
-|------|------|------|-----------|-------|
-| Loop infinito entre login e dashboard | 2025-06-23 17:30:00 | Frontend/Auth | Simplificado requireAuth() removendo validação automática de token | Validação de token deve ser opcional, não automática |
-| Login não funcionava - preventDefault ausente | 2025-06-23 17:45:00 | Frontend/Login | Adicionado e.preventDefault() no início de handleLogin() | Sempre adicionar preventDefault() no início de form handlers |
-| clearToken is not a function | 2025-06-23 17:20:00 | Frontend/API | Renomeado clearToken() para removeToken() para compatibilidade | Manter consistência de nomes entre classes que se comunicam |
-| requireAdmin().then is not a function | 2025-06-23 18:00:00 | Frontend/Auth | Convertidas funções para async para compatibilidade com HTML existente | HTML existente pode esperar funções async - verificar uso antes |
-| users.filter is not a function | 2025-06-23 18:15:00 | Frontend/API | API retornando objeto, não array. Adicionada verificação response.data | Backend pode retornar múltiplos formatos - sempre verificar estrutura |
-| "Perfil de undefined" na aba User | 2025-06-23 17:00:00 | Frontend | Corrigidos campos: username → nome_usuario, phone → celular | Sempre usar nomes exatos do banco - consultar Document 2 |
-| 403 Forbidden - Visitante bloqueado | 2025-06-23 20:45:00 | Backend/Auth | Guard usando includes() em string. Corrigido para === e removidos @Roles de GET | includes() não funciona em strings - usar comparação direta |
-| Cannot set properties of null | 2025-06-23 20:50:00 | Frontend/Profile | profile.js acessando elementos DOM inexistentes. Adicionadas verificações | Sempre verificar se elemento DOM existe antes de manipular |
-| getUserAvatar is not a function | 2025-06-23 20:52:00 | Frontend/Auth | Métodos getUserAvatar() e getPermissionIcon() ausentes. Implementados | Verificar dependências antes de usar métodos |
-| Validação senha 6 caracteres desnecessária | 2025-06-24 12:15:00 | Frontend/Login | Removida validação de 6 caracteres mínimos em login e registro | Validações de segurança no backend, frontend mais flexível |
-| ThrottlerModule dependency não instalada | 2025-06-24 12:20:00 | Backend/Auth | Removidos imports ThrottlerModule até dependência ser instalada | Verificar se dependências npm estão instaladas antes de importar |
-| ui-avatars dependência externa | 2025-06-24 12:25:00 | Frontend/Auth | getUserAvatar() alterado para usar avatar local | Zero dependências externas - sempre usar recursos locais |
-| CSS inline violando arquitetura | 2025-06-24 12:30:00 | Frontend/Login | Removido CSS inline, adicionado aviso para implementar em arquivo CSS | CSS separado do JavaScript conforme arquitetura |
-| **🚨 ERRO CRÍTICO: Novas entities malformadas** | **2025-06-24 12:45:00** | **Backend/TypeORM** | **Entities Chave e LogSistema adicionadas com FKs incorretas causaram erro TypeORM** | **Verificar correspondência exata com schema SQL antes de adicionar entities** |
-| **🚨 PERSISTENTE: TypeORM connection failed** | **2025-06-24 12:55:00** | **Backend/Database** | **AINDA NÃO RESOLVIDO - LogSistema FK corrigida mas erro persiste** | **Investigação sistemática necessária** |
-| **✅ RESOLVIDO: docker-compose up --build** | **2025-06-24 13:00:00** | **Backend/Docker** | **❌ FALSO POSITIVO - Rebuild mascarou problema, erro voltou** | **Rebuild pode mascarar problemas temporariamente via cache** |
-| **🔥 IDENTIFICADO: Eu caguei editando backend** | **2025-06-24 13:10:00** | **Backend/Auth** | **AuthService: adicionei validateToken() desnecessário. AuthController: adicionei rotas que não existiam. Voltando versões simplificadas originais** | **Não adicionar funcionalidades desnecessárias - manter código original funcionando** |
+### P1: SYSTEMATIC METHODOLOGY (MANDATORY)
+Required sequence: Data Validation → Analysis → Diagnosis → Solution → Implementation → Validation
+- Never bypass steps or implement quick fixes
+- No drastic changes without explicit user warning
+- Maximum 3 significant changes per response
+- Always confirm test data accuracy before assuming technical problems
+- Validate each step before proceeding
 
----
+### P2: EVIDENCE-BASED DEBUGGING (MANDATORY)
+Workflow: Data Validation → User Logs → AI Tests (max 5 per terminal) → Fix Implementation
+- First verify test scenario is valid
+- Test each system layer independently: Database → ORM → Library → Code
+- Reproduce errors locally before proposing fixes
+- Show actual error messages, never paraphrase
+- Create controlled test cases with known valid data
+- Document solution path: what was tried, what worked, why
 
-## LIÇÕES CRÍTICAS APRENDIDAS
+### P3: DATABASE-FIRST VALIDATION (CRITICAL)
+Halt operations if schema mismatch detected. Always verify against Document 2 schema.
+- Cross-check field names, types, and constraints before implementation
+- ENUM values must match exactly
+- Verify test user credentials exist and are correct in database
+- Create fresh test data with known credentials when debugging auth issues
+- Any schema discrepancy requires immediate correction
 
-### **🔥 ERROS MAIS GRAVES - NUNCA REPETIR:**
+### P4: COMPLETE FILE DELIVERY (CRITICAL)
+Always provide complete, ready-to-implement files in artifacts.
+- Full file contents for immediate copy-paste implementation
+- Never partial code snippets requiring user assembly
+- Complete configurations, entities, controllers, services
 
-**1. ADICIONAR ENTITIES SEM VERIFICAR SCHEMA**
-- ❌ **Erro**: Criar entities novas sem consultar Document 2
-- ✅ **Correção**: Sempre verificar schema SQL exato antes de criar entities
-- 🎯 **Regra**: Entities devem corresponder 100% ao SQL existente
+## WORKFLOW PROTOCOLS
 
-**2. MODIFICAR ARQUIVO ERRADO**
-- ❌ **Erro**: Criar artefatos mas não aplicar no arquivo real
-- ✅ **Correção**: Sempre verificar se mudança foi aplicada no arquivo correto
-- 🎯 **Regra**: Confirmar implementação real, não apenas artefatos
+### W1: DEBUGGING SEQUENCE (ENFORCED)
+1. Data Validation: Verify test scenario is correct
+2. User provides: Logs + Context + Comments
+3. AI requests: Specific tests/commands for user execution
+4. Layer Testing: Test each system component independently
+5. AI implements: Complete solution with full files
+6. User validates: Implementation success
 
-**3. VALIDAÇÃO DESNECESSÁRIA NO FRONTEND**
-- ❌ **Erro**: Validações rigorosas no frontend bloqueando UX
-- ✅ **Correção**: Frontend flexível, validações de segurança no backend
-- 🎯 **Regra**: Frontend não deve impor restrições desnecessárias
+### W2: CONFIRMATION REQUIREMENTS (MANDATORY)
+Request confirmation before:
+- Breaking changes that could compromise system functionality
+- Critical area modifications (auth, database schema, Docker configs)
+- Architecture overhauls affecting multiple system components
 
-### **⚠️ PADRÕES DE ERRO COMUNS:**
+### W3: LOOP DETECTION PROTOCOL (AUTOMATIC)
+- Monitor for repeated unsuccessful attempts (3+ cycles)
+- Suggest data validation if auth/credential issues persist
+- Alert user when debugging enters circular patterns
+- Recommend creating controlled test environment when standard approach fails
 
-**Frontend:**
-- Campos incorretos: usar nome_usuario, celular, permissao (nunca username, phone, permission)
-- DOM manipulation: sempre verificar if(element) antes de usar
-- Async functions: verificar se HTML espera .then() antes de implementar
+### W4: LAYER ISOLATION PROTOCOL
+When debugging fails, test each layer independently:
+1. Database direct (mysql2/raw SQL)
+2. ORM layer (TypeORM direct query)
+3. Library layer (standalone function test)
+4. Application layer (service/controller code)
 
-**Backend:**
-- FKs: usar { nullable: true, onDelete: 'SET NULL' } quando apropriado
-- Guards: usar === para strings, não includes()
-- Dependencies: verificar se está instalado antes de importar
+## COMMUNICATION STANDARDS
 
----
+### CM1: RESPONSE STRUCTURE (ENFORCED)
+1. DATA VALIDATION: Verify test scenario accuracy (if applicable)
+2. DIAGNOSIS: Root cause identification
+3. SOLUTION: Complete implementation approach
+4. COMMANDS: Exact user actions required
+5. FILES: Complete artifacts ready for copy-paste
+6. VALIDATION: Success verification steps
 
-## ANÁLISE DO ERRO PERSISTENTE
+### CM2: ALERT SYSTEM (MANDATORY)
+Always alert user about:
+- Breaking changes to existing functionality
+- Database schema modifications
+- Docker/environment configuration changes
+- API contract modifications
+- When test data appears invalid or inconsistent
 
-### **🚨 ERRO ATUAL:**
+## SPECIALIZED DEBUGGING PROTOCOLS
+
+### AUTHENTICATION DEBUGGING PROTOCOL
+1. VERIFY: Test credentials exist and are accurate
+2. CREATE: Fresh test user with known credentials
+3. TEST: Happy path with controlled data
+4. ISOLATE: Database → ORM → Library → Code
+5. FIX: The actual failing component
+
+### DATA CORRUPTION INVESTIGATION
+1. VERIFY: Raw data in database is correct
+2. TEST: ORM retrieval with direct query
+3. TEST: Library function with extracted data
+4. ISOLATE: Where corruption actually occurs
+5. FIX: The corruption point, not symptoms
+
+### DOCKER CACHE DEBUGGING
+1. VERIFY: File was actually updated (stat, head commands)
+2. REBUILD: npm run build to recompile
+3. RESTART: docker-compose restart service
+4. VERIFY: Logs show new code execution
+5. ESCALATE: Full rebuild if cache issues persist
+
+## ERROR PREVENTION STRATEGIES
+
+### ASSUMPTION ELIMINATION
+- Never assume test data is correct
+- Always verify credentials/data before debugging
+- Create controlled test scenarios when data is unknown
+- Document working credentials for future reference
+
+### EARLY DATA VALIDATION
+- Step 0 of any auth debugging: verify test credentials
+- Quick test with known-good data before complex debugging
+- Create fresh test users for debugging sessions
+
+### DEBUGGING EFFICIENCY
+- Test happy path first with controlled data
+- Isolate layers when happy path fails
+- Never spend more than 3 attempts on assumed data
+- Switch to controlled test scenario if assumptions fail
+
+## DEBUGGING DECISION TREE
+
 ```
-[Nest] 25336 - 24/06/2025, 08:36:37 ERROR [TypeOrmModule] Unable to connect to the database. Retrying (1)...
+User reports auth/credential issue
+↓
+Are test credentials verified? → NO → Verify or create controlled test → Test again
+↓ YES
+Does it work with fresh test data? → YES → Problem is with original data
+↓ NO
+Test each layer independently:
+1. Database direct
+2. ORM layer
+3. Library layer
+4. Application layer
+↓
+Identify failing layer → Fix → Validate
 ```
 
-### **✅ JÁ VERIFICADO:**
-- MySQL rodando ✅ (container up)
-- .env existe ✅ (credenciais corretas)
-- Entities corrigidas ✅ (User, Chave, LogSistema)
+## QUALITY ASSURANCE
 
-### **🔍 POSSÍVEIS CAUSAS RESTANTES:**
+### SUCCESS CRITERIA
+Each interaction must achieve:
+- Clear validation of test scenario accuracy
+- Accurate problem diagnosis with evidence
+- Layer-by-layer validation when needed
+- Complete solution implementation via full file delivery
+- Successful validation of fix
+- Controlled test case creation when applicable
 
-**1. SYNCHRONIZE ATIVADO**
-- TypeORM pode estar tentando modificar schema existente
-- **Teste**: Desabilitar `synchronize: false` no database.config.ts
+### EFFICIENCY METRICS
+- Solution effectiveness: Must resolve issue permanently
+- Implementation speed: Optimized for copy-paste workflow
+- Code maintainability: Future-proof solutions preferred
+- User workflow: Minimal disruption, maximum delivery speed
 
-**2. ENTITIES EXTRAS NO APP.MODULE**
-- Pode ter entities registradas duplamente
-- **Teste**: Verificar imports no app.module.ts
+## PROHIBITED ACTIONS
 
-**3. CACHE TYPEORM**
-- Metadata antiga pode estar causando conflito
-- **Teste**: `docker-compose down && docker-compose up --build`
+Never:
+- Implement temporary solutions or quick fixes
+- Skip debugging steps to rush to implementation
+- Provide partial code requiring user assembly
+- Make breaking changes without explicit warning
+- Leave problems to fix later
+- Ignore Document 2 constraints during implementation
+- Forget to update Document 3 after debugging sessions
+- Assume test data is correct without verification
+- Debug for extended periods with potentially invalid test data
+- Skip data validation when auth/credentials involved
 
-**4. CREDENCIAIS ESPECÍFICAS**
-- Docker pode estar usando credenciais diferentes
-- **Teste**: Conectar diretamente: `docker exec -it lab-mysql mysql -u lab_user -p`
+## DOCUMENTATION INTEGRATION
 
-### **🎯 PRÓXIMOS PASSOS SISTEMÁTICOS:**
+### DOCUMENT CONSULTATION PROTOCOL
+- Session start: Check Document 2 (Project Structure) and Document 3 (Error Log)
+- New functionality: Consult Document 2 for architectural constraints
+- Debug process start: Check Document 3 for similar historical issues
+- Session end: Update Document 3 with new resolutions
 
-1. **Testar conexão direta MySQL**
-2. **Desabilitar synchronize temporariamente**
-3. **Rebuild completo dos containers**
-4. **Verificar logs MySQL detalhados**
+### IMPLEMENTATION FLOW
+1. Check Document 2 for architectural constraints
+2. Check Document 3 for similar historical issues
+3. Proceed with implementation following this protocol
+4. Update Document 3 with resolution details
 
----
-
-## TEMPLATE PARA NOVOS ERROS
-```
-| [Descrição breve] | [YYYY-MM-DD HH:MM:SS] | [Area] | [Solução exata] | [Lição para prevenir] |
-```
-
----
-
-*Este log documenta erros para construir conhecimento institucional e prevenir recorrências. Sempre consultar antes de implementar mudanças similares.*
+This protocol ensures maximum efficiency in AI-human collaboration while maintaining code quality and minimizing debugging loops through systematic data validation and layer isolation testing.

@@ -1,6 +1,7 @@
 // ===============================================
-// CONDUCTOR - AUTH SERVICE COMPLETO ORIGINAL + CHAVES
+// CONDUCTOR - AUTH SERVICE COMPLETO COM CORREÇÃO
 // backend/src/auth/auth.service.ts
+// CORREÇÃO: Usar validateAndConsumeKey() para chaves single_use
 // ===============================================
 
 import { Injectable, UnauthorizedException, BadRequestException, ConflictException, Inject, forwardRef } from '@nestjs/common';
@@ -114,7 +115,7 @@ export class AuthService {
   }
 
   // ===============================================
-  // REGISTER - ORIGINAL + INTEGRAÇÃO CHAVES
+  // REGISTER - CORRIGIDO COM validateAndConsumeKey
   // ===============================================
   
   async register(createUserDto: CreateUserDto) {
@@ -129,24 +130,48 @@ export class AuthService {
       });
 
       // ===============================================
-      // NOVA FUNCIONALIDADE: VALIDAÇÃO DE CHAVE
+      // CORREÇÃO: VALIDAÇÃO E CONSUMO DE CHAVE
       // ===============================================
       
       let permissaoFinal: UserPermission = UserPermission.VISITANTE;
       
       if (createUserDto.chave_acesso && createUserDto.chave_acesso.trim()) {
-        console.log('🔑 [CHAVE] Validando chave:', createUserDto.chave_acesso);
+        console.log('🔑 [CHAVE] Validando e consumindo chave:', createUserDto.chave_acesso);
         
         try {
-          if (this.chavesService && typeof this.chavesService.validateKey === 'function') {
-            const validacao = await this.chavesService.validateKey(createUserDto.chave_acesso);
+          // ✅ CORREÇÃO PRINCIPAL: Usar validateAndConsumeKey() 
+          if (this.chavesService && typeof this.chavesService.validateAndConsumeKey === 'function') {
+            console.log('🔑 [CHAVE] Usando método validateAndConsumeKey...');
+            const validacao = await this.chavesService.validateAndConsumeKey(createUserDto.chave_acesso);
             
             if (validacao && validacao.isValid && validacao.permission) {
               // Converter string para enum
               const permissaoEnum = Object.values(UserPermission).find(p => p === validacao.permission);
               if (permissaoEnum) {
                 permissaoFinal = permissaoEnum;
+                console.log('✅ [CHAVE] Chave válida e consumida! Permissão atribuída:', permissaoFinal);
+                console.log('✅ [CHAVE] Status do consumo:', validacao.consumed ? 'Consumida com sucesso' : 'Não foi consumida');
+                console.log('✅ [CHAVE] Mensagem:', validacao.message);
+              } else {
+                console.warn('⚠️ [CHAVE] Permissão retornada não é válida:', validacao.permission);
+                throw new BadRequestException('Chave retornou permissão inválida');
+              }
+            } else {
+              console.log('❌ [CHAVE] Falha na validação/consumo:', validacao?.message || 'Resposta inválida');
+              throw new BadRequestException(`Chave de acesso inválida: ${validacao?.message || 'Chave não encontrada'}`);
+            }
+          } 
+          // ✅ FALLBACK: Se validateAndConsumeKey não existir, usar método antigo
+          else if (this.chavesService && typeof this.chavesService.validateKey === 'function') {
+            console.warn('⚠️ [CHAVE] Método validateAndConsumeKey não encontrado, usando validateKey (não recomendado)');
+            const validacao = await this.chavesService.validateKey(createUserDto.chave_acesso);
+            
+            if (validacao && validacao.isValid && validacao.permission) {
+              const permissaoEnum = Object.values(UserPermission).find(p => p === validacao.permission);
+              if (permissaoEnum) {
+                permissaoFinal = permissaoEnum;
                 console.log('✅ [CHAVE] Chave válida! Permissão atribuída:', permissaoFinal);
+                console.warn('⚠️ [CHAVE] AVISO: Usando método antigo que pode consumir chave prematuramente');
               } else {
                 console.warn('⚠️ [CHAVE] Permissão retornada não é válida:', validacao.permission);
                 throw new BadRequestException('Chave retornou permissão inválida');
@@ -157,12 +182,14 @@ export class AuthService {
             }
           } else {
             console.warn('⚠️ [CHAVE] ChavesService não disponível - ignorando chave');
+            console.warn('⚠️ [CHAVE] Métodos disponíveis:', Object.getOwnPropertyNames(Object.getPrototypeOf(this.chavesService || {})));
           }
         } catch (chaveError) {
-          console.error('❌ [CHAVE] Erro ao validar chave:', chaveError);
+          console.error('❌ [CHAVE] Erro ao processar chave:', chaveError);
           if (chaveError instanceof BadRequestException) {
             throw chaveError;
           }
+          throw new BadRequestException(`Erro interno ao processar chave: ${chaveError.message}`);
         }
       } else {
         console.log('⚠️ [CHAVE] Nenhuma chave fornecida - usuário será Visitante');
@@ -312,6 +339,7 @@ export class AuthService {
         message: 'Logout realizado com sucesso',
       };
     } catch (error) {
+      console.error('❌ Erro no logout:', error);
       return {
         success: false,
         message: 'Erro no logout',
@@ -322,17 +350,19 @@ export class AuthService {
   // ✅ FASE 3: Refresh token
   async refreshToken(token: string) {
     try {
+      // Verificar se token não está na blacklist
+      if (this.invalidatedTokens.has(token)) {
+        throw new UnauthorizedException('Token invalidado');
+      }
+
       const payload = this.jwtService.verify(token);
       const user = await this.usersService.findById(payload.sub);
       
-      if (!user) {
-        throw new UnauthorizedException('Usuário não encontrado');
+      if (!user || !user.isActive()) {
+        throw new UnauthorizedException('Usuário inválido ou inativo');
       }
 
-      // Invalidar token antigo
-      this.invalidatedTokens.add(token);
-
-      // Criar novo payload
+      // Criar novo token
       const newPayload = {
         sub: user.id,
         nome_usuario: user.nome_usuario,
@@ -344,40 +374,25 @@ export class AuthService {
 
       const access_token = this.jwtService.sign(newPayload);
 
+      // Invalidar token antigo
+      this.invalidatedTokens.add(token);
+
       return {
         success: true,
         message: 'Token renovado com sucesso',
         access_token,
+        user: {
+          id: user.id,
+          nome_usuario: user.nome_usuario,
+          email: user.email,
+          permissao: user.permissao,
+          funcao: user.funcao,
+          status: user.status,
+        },
       };
     } catch (error) {
+      console.error('❌ Erro no refresh token:', error);
       throw new UnauthorizedException('Token inválido para renovação');
-    }
-  }
-
-  // ✅ FASE 4: Health check melhorado
-  async healthCheck() {
-    try {
-      // Testar conexão com banco via UsersService
-      const userCount = await this.usersService.count();
-      
-      return {
-        success: true,
-        message: 'Auth API está funcionando!',
-        timestamp: new Date().toISOString(),
-        status: 'OK',
-        database: 'Connected',
-        userCount,
-        version: '1.0.0',
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: 'Auth API com problemas',
-        timestamp: new Date().toISOString(),
-        status: 'ERROR',
-        database: 'Disconnected',
-        error: error.message,
-      };
     }
   }
 }
