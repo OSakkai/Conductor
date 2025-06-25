@@ -1,0 +1,186 @@
+🔥 INICIANDO TESTE DE ESTRESSE - SISTEMA DE CHAVES COMPLETO
+============================================================
+
+📋 FASE 1: PREPARAÇÃO DO AMBIENTE
+=================================
+1.1 - Verificando conectividade...
+🔐 Obtendo token de administrador...
+✅ Token obtido: eyJhbGciOiJIUzI1NiIs...
+1.2 - Limpando chaves de teste anteriores...
+1.3 - Estado inicial das chaves...
+mysql: [Warning] Using a password on the command line interface can be insecure.
++--------------+
+| total_chaves |
++--------------+
+|            2 |
++--------------+
+
+📋 FASE 2: CRIAÇÃO DE CHAVES DOS 3 TIPOS
+=======================================
+2.1 - Criando chave PERMANENTE...
+✅ TESTE 1: Criação de chave permanente
+2.2 - Criando chave DE USO ÚNICO...
+✅ TESTE 2: Criação de chave de uso único
+2.3 - Criando chave EXPIRÁVEL (30 segundos)...
+✅ TESTE 3: Criação de chave expirável
+2.4 - Criando chave EXPIRÁVEL já expirada...
+❌ TESTE 4: Criação de chave já expirada - Resposta: {"success":false,"message":"Erro ao criar chave","error":"Data de expiração deve ser no futuro"}
+2.5 - Verificando chaves criadas no banco...
+mysql: [Warning] Using a password on the command line interface can be insecure.
++------------------------+------------+---------------+--------+---------------------+
+| chave                  | tipo       | permissao     | status | data_expiracao      |
++------------------------+------------+---------------+--------+---------------------+
+| TEST-EXPIRE-1750856562 | expiring   | Administrador | ativa  | 2025-06-25 13:03:13 |
+| TEST-SINGLE-1750856562 | single_use | Operador      | ativa  | NULL                |
+| TEST-PERM-1750856562   | permanent  | Usuario       | ativa  | NULL                |
++------------------------+------------+---------------+--------+---------------------+
+
+📋 FASE 3: TESTE DE ESTRESSE - CHAVE PERMANENTE
+===============================================
+3.1 - Validando chave permanente (deve funcionar sempre)...
+❌ TESTE 5: Validação 1 da chave permanente - Resposta: {"message":"Token de acesso não fornecido","error":"Unauthorized","statusCode":401}
+❌ TESTE 6: Validação 2 da chave permanente - Resposta: {"message":"Token de acesso não fornecido","error":"Unauthorized","statusCode":401}
+❌ TESTE 7: Validação 3 da chave permanente - Resposta: {"message":"Token de acesso não fornecido","error":"Unauthorized","statusCode":401}
+❌ TESTE 8: Validação 4 da chave permanente - Resposta: {"message":"Token de acesso não fornecido","error":"Unauthorized","statusCode":401}
+❌ TESTE 9: Validação 5 da chave permanente - Resposta: {"message":"Token de acesso não fornecido","error":"Unauthorized","statusCode":401}
+3.2 - Registrando múltiplos usuários com chave permanente...
+✅ TESTE 10: Registro 1 com chave permanente
+✅ TESTE 11: Registro 2 com chave permanente
+✅ TESTE 12: Registro 3 com chave permanente
+3.3 - Verificando se chave permanente ainda está ativa...
+mysql: [Warning] Using a password on the command line interface can be insecure.
++----------------------+------------+--------+
+| chave                | usos_atual | status |
++----------------------+------------+--------+
+| TEST-PERM-1750856562 |          0 | ativa  |
++----------------------+------------+--------+
+3.4 - Verificando usuários criados com chave permanente...
+mysql: [Warning] Using a password on the command line interface can be insecure.
++------------------------+-----------+
+| nome_usuario           | permissao |
++------------------------+-----------+
+| perm_user_1_1750856562 | Usuario   |
+| perm_user_2_1750856562 | Usuario   |
+| perm_user_3_1750856562 | Usuario   |
++------------------------+-----------+
+
+📋 FASE 4: TESTE DE ESTRESSE - CHAVE DE USO ÚNICO
+================================================
+4.1 - Primeira validação da chave de uso único (deve funcionar)...
+❌ TESTE 13: Primeira validação de chave single_use - Resposta: {"message":"Token de acesso não fornecido","error":"Unauthorized","statusCode":401}
+4.2 - Primeiro registro com chave de uso único (deve funcionar)...
+✅ TESTE 14: Primeiro registro com chave single_use
+4.3 - Verificando se chave foi marcada como usada...
+mysql: [Warning] Using a password on the command line interface can be insecure.
++------------------------+------------+-------------+--------+
+| chave                  | usos_atual | usos_maximo | status |
++------------------------+------------+-------------+--------+
+| TEST-SINGLE-1750856562 |          1 |           1 | usada  |
++------------------------+------------+-------------+--------+
+4.4 - Segunda validação da chave (deve falhar - já usada)...
+❌ TESTE 15: Segunda validação de chave usada - Resposta: {"message":"Token de acesso não fornecido","error":"Unauthorized","statusCode":401}
+❌ TESTE 16: Chave single_use deveria estar invalidada
+4.5 - Tentativa de segundo registro (deve falhar)...
+❌ TESTE 17: Segundo registro com chave já usada (deve falhar) - Resposta: {"message":"Chave de acesso inválida: Chave inativa ou expirada","error":"Bad Request","statusCode":400}
+
+📋 FASE 5: TESTE DE ESTRESSE - CHAVE EXPIRÁVEL
+==============================================
+5.1 - Validando chave expirável ANTES da expiração...
+❌ TESTE 18: Validação de chave antes da expiração - Resposta: {"message":"Token de acesso não fornecido","error":"Unauthorized","statusCode":401}
+❌ TESTE 19: Chave expirável deveria estar válida antes da expiração
+5.2 - Registrando usuário com chave antes da expiração...
+✅ TESTE 20: Registro com chave antes da expiração
+5.3 - Aguardando expiração da chave (35 segundos)...
+Tempo restante: 35s Tempo restante: 34s Tempo restante: 33s Tempo restante: 32s Tempo restante: 31s Tempo restante: 30s Tempo restante: 29s Tempo restante: 28s Tempo restante: 27s Tempo restante: 26s Tempo restante: 25s Tempo restante: 24s Tempo restante: 23s Tempo restante: 22s Tempo restante: 21s Tempo restante: 20s Tempo restante: 19s Tempo restante: 18s Tempo restante: 17s Tempo restante: 16s Tempo restante: 15s Tempo restante: 14s Tempo restante: 13s Tempo restante: 12s Tempo restante: 11s Tempo restante: 10s Tempo restante: 9s Tempo restante: 8s Tempo restante: 7s Tempo restante: 6s Tempo restante: 5s Tempo restante: 4s Tempo restante: 3s Tempo restante: 2s Tempo restante: 1s 
+5.4 - Validando chave APÓS expiração (deve falhar)...
+❌ TESTE 21: Validação após expiração - Resposta: {"message":"Token de acesso não fornecido","error":"Unauthorized","statusCode":401}
+❌ TESTE 22: Chave expirável deveria estar invalidada após expiração
+5.5 - Tentativa de registro após expiração (deve falhar)...
+❌ TESTE 23: Registro com chave expirada (deve falhar) - Resposta: {"message":"Chave de acesso inválida: Chave expirada","error":"Bad Request","statusCode":400}
+5.6 - Verificando status das chaves no banco após expiração...
+mysql: [Warning] Using a password on the command line interface can be insecure.
++------------------------+----------+----------+---------------------+--------------+
+| chave                  | tipo     | status   | data_expiracao      | tempo_status |
++------------------------+----------+----------+---------------------+--------------+
+| TEST-EXPIRE-1750856562 | expiring | expirada | 2025-06-25 13:03:13 | EXPIRADA     |
++------------------------+----------+----------+---------------------+--------------+
+
+📋 FASE 6: TESTE DE CHAVE JÁ EXPIRADA
+====================================
+6.1 - Validando chave já expirada desde criação...
+❌ TESTE 24: Validação de chave já expirada - Resposta: {"message":"Token de acesso não fornecido","error":"Unauthorized","statusCode":401}
+❌ TESTE 25: Chave já expirada deveria estar invalidada
+6.2 - Tentativa de registro com chave já expirada (deve falhar)...
+❌ TESTE 26: Registro com chave já expirada (deve falhar) - Resposta: {"message":"Chave de acesso inválida: Chave não encontrada","error":"Bad Request","statusCode":400}
+
+📋 FASE 7: TESTES DE EDGE CASES
+===============================
+7.1 - Validação com chave vazia...
+❌ TESTE 27: Validação com chave vazia - Resposta: {"message":"Token de acesso não fornecido","error":"Unauthorized","statusCode":401}
+7.2 - Validação com chave inexistente...
+❌ TESTE 28: Validação com chave inexistente - Resposta: {"message":"Token de acesso não fornecido","error":"Unauthorized","statusCode":401}
+❌ TESTE 29: Chave inexistente deveria estar invalidada
+7.3 - Registro sem chave (deve criar Visitante)...
+✅ TESTE 30: Registro sem chave
+7.4 - Múltiplas validações simultâneas da chave permanente...
+✅ TESTE 31: 10 validações simultâneas da chave permanente
+
+📋 FASE 8: VERIFICAÇÕES FINAIS
+==============================
+8.1 - Estado final de todas as chaves de teste...
+mysql: [Warning] Using a password on the command line interface can be insecure.
++------------------------+------------+---------------+------------+-------------+----------+---------------+
+| chave                  | tipo       | permissao     | usos_atual | usos_maximo | status   | tempo_status  |
++------------------------+------------+---------------+------------+-------------+----------+---------------+
+| TEST-PERM-1750856562   | permanent  | Usuario       |          0 |        NULL | ativa    | SEM_EXPIRACAO |
+| TEST-SINGLE-1750856562 | single_use | Operador      |          1 |           1 | usada    | SEM_EXPIRACAO |
+| TEST-EXPIRE-1750856562 | expiring   | Administrador |          0 |        NULL | expirada | EXPIRADA      |
++------------------------+------------+---------------+------------+-------------+----------+---------------+
+8.2 - Usuários criados durante os testes...
+mysql: [Warning] Using a password on the command line interface can be insecure.
++------------------------+---------------+-------------+----------------------------+
+| nome_usuario           | permissao     | funcao      | data_criacao               |
++------------------------+---------------+-------------+----------------------------+
+| no_key_user_1750856562 | Visitante     | Estagiario  | 2025-06-25 13:03:23.872386 |
+| expire_user_1750856562 | Administrador | Gestor      | 2025-06-25 13:02:46.561049 |
+| single_user_1750856562 | Operador      | Coordenador | 2025-06-25 13:02:45.790797 |
+| perm_user_3_1750856562 | Usuario       | Analista    | 2025-06-25 13:02:44.898741 |
+| perm_user_2_1750856562 | Usuario       | Analista    | 2025-06-25 13:02:44.668450 |
+| perm_user_1_1750856562 | Usuario       | Analista    | 2025-06-25 13:02:44.480152 |
+| docker_user teste      | Desenvolvedor | Diretor     | 2025-06-17 16:18:47.438140 |
++------------------------+---------------+-------------+----------------------------+
+8.3 - Estatísticas finais do sistema...
+mysql: [Warning] Using a password on the command line interface can be insecure.
++--------------+---------------+---------------+------------------+----------------+------------------------------+
+| total_chaves | chaves_ativas | chaves_usadas | chaves_expiradas | total_usuarios | usuarios_criados_ultima_hora |
++--------------+---------------+---------------+------------------+----------------+------------------------------+
+|            5 |             2 |             2 |                1 |             40 |                            9 |
++--------------+---------------+---------------+------------------+----------------+------------------------------+
+8.4 - Testando login dos usuários criados...
+8.4.1 - Login do usuário com chave permanente...
+✅ TESTE 32: Login do usuário com chave permanente
+8.4.2 - Login do usuário com chave de uso único...
+✅ TESTE 33: Login do usuário com chave single_use
+8.4.3 - Login do usuário com chave expirável...
+✅ TESTE 34: Login do usuário com chave expirável
+
+=======================================================
+🔥 TESTE DE ESTRESSE CONCLUÍDO
+=======================================================
+
+📊 ESTATÍSTICAS DOS TESTES:
+  Total de testes executados: 34
+  Sucessos: 13
+  Falhas: 21
+  Taxa de sucesso: 38%
+
+⚠️  ALGUNS TESTES FALHARAM (21/34)
+❗ Verifique os logs acima para identificar problemas
+
+=======================================================
+🔧 RESUMO TÉCNICO:
+  - Chaves criadas: 4 (permanent, single_use, expiring, expired)
+  - Usuários criados: ~6-8 (dependendo dos testes)
+  - Tipos de teste: Validação, Registro, Expiração, Edge cases
+  - Tempo total: ~45 segundos (incluindo espera de expiração)
+=======================================================

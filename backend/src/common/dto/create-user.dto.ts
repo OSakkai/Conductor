@@ -1,3 +1,8 @@
+// ===============================================
+// CONDUCTOR - CREATE USER DTO COMPLETO ORIGINAL + CHAVE
+// backend/src/common/dto/create-user.dto.ts
+// ===============================================
+
 import { UserRole, UserPermission } from '../../users/user.entity';
 
 export class CreateUserDto {
@@ -7,5 +12,5 @@ export class CreateUserDto {
   email: string;
   celular?: string;
   senha: string;
-  chave_acesso?: string; 
+  chave_acesso?: string; // ✅ ÚNICA ADIÇÃO AO ORIGINAL
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards,HttpCode, HttpStatus } from '@nestjs/common';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { ChavesService } from './chaves.service';
 import { Chave } from './chave.entity';
@@ -145,6 +145,59 @@ export class ChavesController {
         success: false,
         message: 'Erro ao carregar estatísticas',
         error: error.message,
+      };
+    }
+  }
+
+  @Post('validate')
+  @HttpCode(HttpStatus.OK)
+  async validateKey(@Body() body: { chave: string }) {
+    try {
+      console.log('🔑 [VALIDATE] Validando chave:', body.chave);
+      
+      if (!body || !body.chave || typeof body.chave !== 'string' || !body.chave.trim()) {
+        console.log('❌ [VALIDATE] Chave não fornecida ou inválida');
+        return {
+          success: false,
+          isValid: false,
+          message: 'Chave não fornecida ou formato inválido',
+        };
+      }
+
+      if (!this.chavesService || typeof this.chavesService.validateKey !== 'function') {
+        console.error('❌ [VALIDATE] ChavesService não disponível');
+        return {
+          success: false,
+          isValid: false,
+          message: 'Serviço de validação temporariamente indisponível',
+        };
+      }
+
+      const result = await this.chavesService.validateKey(body.chave.trim());
+      
+      console.log('🔑 [VALIDATE] Resultado:', result);
+      
+      if (!result || typeof result !== 'object') {
+        console.error('❌ [VALIDATE] Resposta inválida do ChavesService');
+        return {
+          success: false,
+          isValid: false,
+          message: 'Erro interno na validação',
+        };
+      }
+      
+      return {
+        success: true,
+        isValid: result.isValid || false,
+        permission: result.permission || null,
+        message: result.message || 'Validação concluída',
+      };
+    } catch (error) {
+      console.error('❌ [VALIDATE] Erro na validação:', error);
+      return {
+        success: false,
+        isValid: false,
+        message: 'Erro interno na validação da chave',
       };
     }
   }
