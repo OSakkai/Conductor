@@ -1,0 +1,488 @@
+[0;35m🔥 CONDUCTOR - INVESTIGAÇÃO GUARDS GLOBAIS[0m
+[0;35m===============================================[0m
+
+[0;34m📋 FASE 1: VERIFICAR SE ARQUIVO FOI ATUALIZADO[0m
+[0;34m===============================================[0m
+[0;36m1.1 - Verificando timestamp do arquivo chaves.controller.ts...[0m
+-rw-r--r-- 1 Gabriel Sakai 197121 5486 Jun 25 09:47 backend/src/chaves/chaves.controller.ts
+
+[0;36m1.2 - Verificando se @UseGuards ainda está no controller...[0m
+7:@UseGuards(JwtAuthGuard)
+
+[0;36m1.3 - Verificando se @UseGuards está nos métodos individuais...[0m
+
+@Controller('chaves')
+@UseGuards(JwtAuthGuard)
+export class ChavesController {
+  constructor(private readonly chavesService: ChavesService) {}
+
+[0;34m📋 FASE 2: VERIFICAR GUARDS GLOBAIS NO APP[0m
+[0;34m=========================================[0m
+[0;36m2.1 - Verificando app.module.ts para guards globais...[0m
+[1;33m=== Procurando APP_GUARD, providers globais ===[0m
+47-    ChavesModule,   // 🆕 Gestão de chaves de acesso
+48-    LogsModule,     // 🆕 Sistema de logs
+49-  ],
+50-
+51-  controllers: [AppController],
+52:  providers: [AppService],
+53-})
+54-export class AppModule {
+55-  constructor() {
+56-    console.log('🎼 CONDUCTOR - Sistema inicializado com sucesso!');
+57-    console.log('⚡ Módulos carregados:');
+
+[0;36m2.2 - Verificando main.ts para guards globais...[0m
+[1;33m=== Procurando useGlobalGuards ===[0m
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  
+  // Configurar CORS
+  app.enableCors({
+    origin: ['http://localhost', 'http://localhost:80', 'http://localhost:8080'],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+  });
+
+  // Prefixo global para todas as rotas da API
+  app.setGlobalPrefix('api');
+
+  const port = process.env.PORT || 3000;
+  await app.listen(port);
+  
+  console.log(`🚀 Servidor rodando na porta ${port}`);
+  console.log(`📚 API disponível em: http://localhost:${port}/api`);
+}
+
+bootstrap();
+[0;34m📋 FASE 3: VERIFICAR SE BACKEND REINICIOU[0m
+[0;34m=======================================[0m
+[0;36m3.1 - Verificando logs de inicialização do backend...[0m
+time="2025-06-25T10:28:56-03:00" level=warning msg="C:\\Users\\Gabriel Sakai\\Desktop\\lab-sistema\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/auth/health, GET} route[39m[38;5;3m +1ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/auth/test, GET} route[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUsersController {/api/users}:[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users, GET} route[39m[38;5;3m +1ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/:id, GET} route[39m[38;5;3m +1ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users, POST} route[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/:id, PUT} route[39m[38;5;3m +1ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/:id, DELETE} route[39m[38;5;3m +1ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/stats/summary, GET} route[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/:id/reactivate, PUT} route[39m[38;5;3m +1ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/by-permission/:permission, GET} route[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/active/list, GET} route[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/:id/permission, PUT} route[39m[38;5;3m +1ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/:id/reset-password, PUT} route[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mChavesController {/api/chaves}:[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/chaves, GET} route[39m[38;5;3m +1ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/chaves, POST} route[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/chaves/:id, GET} route[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/chaves/:id, PUT} route[39m[38;5;3m +1ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/chaves/:id, DELETE} route[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/chaves/:id/deactivate, PUT} route[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/chaves/stats/summary, GET} route[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/chaves/validate, POST} route[39m[38;5;3m +1ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mLogsController {/api/logs}:[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/logs, GET} route[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/logs, POST} route[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:24:29 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +5ms[39m
+lab-backend  | [33m[Nest] 18  - [39m06/25/2025, 1:24:31 PM [33m   WARN[39m [38;5;3m[JwtAuthGuard] [39m[33mToken não fornecido na requisição[39m
+
+[0;36m3.2 - Forçando rebuild completo e restart...[0m
+[1;33mParando containers...[0m
+time="2025-06-25T10:28:56-03:00" level=warning msg="C:\\Users\\Gabriel Sakai\\Desktop\\lab-sistema\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container lab-nginx  Stopping
+ Container lab-nginx  Stopped
+ Container lab-nginx  Removing
+ Container lab-nginx  Removed
+ Container lab-backend  Stopping
+ Container lab-backend  Stopped
+ Container lab-backend  Removing
+ Container lab-backend  Removed
+ Container lab-mysql  Stopping
+ Container lab-mysql  Stopped
+ Container lab-mysql  Removing
+ Container lab-mysql  Removed
+ Network lab-sistema_lab-network  Removing
+ Network lab-sistema_lab-network  Removed
+[1;33mReconstruindo backend...[0m
+time="2025-06-25T10:29:03-03:00" level=warning msg="C:\\Users\\Gabriel Sakai\\Desktop\\lab-sistema\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+Compose can now delegate builds to bake for better performance.
+ To do so, set COMPOSE_BAKE=true.
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [backend internal] load build definition from Dockerfile
+#1 transferring dockerfile: 438B 0.0s done
+#1 DONE 0.0s
+
+#2 [backend internal] load metadata for docker.io/library/node:18-alpine
+#2 ...
+
+#3 [backend auth] library/node:pull token for registry-1.docker.io
+#3 DONE 0.0s
+
+#2 [backend internal] load metadata for docker.io/library/node:18-alpine
+#2 DONE 1.6s
+
+#4 [backend internal] load .dockerignore
+#4 transferring context: 2B done
+#4 DONE 0.0s
+
+#5 [backend internal] load build context
+#5 DONE 0.0s
+
+#6 [backend 1/6] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e
+#6 resolve docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e 0.1s done
+#6 DONE 0.1s
+
+#5 [backend internal] load build context
+#5 transferring context: 1.86MB 2.2s done
+#5 DONE 2.3s
+
+#7 [backend 3/6] COPY package*.json ./
+#7 CACHED
+
+#8 [backend 4/6] RUN npm ci --omit=dev
+#8 CACHED
+
+#9 [backend 5/6] COPY . .
+#9 CACHED
+
+#10 [backend 2/6] WORKDIR /app
+#10 CACHED
+
+#11 [backend 6/6] RUN npm run build
+#11 CACHED
+
+#12 [backend] exporting to image
+#12 exporting layers done
+#12 exporting manifest sha256:0a3a8bf61e115ed3b49af7ea6b6dc9d2bee5a3eedc4414ea8a81d19f5c1d008b done
+#12 exporting config sha256:a4bc887d8422ddb4cbddecf897e1cf26aaf543db39fd1b0a0fa6464aab372f42 done
+#12 exporting attestation manifest sha256:e917a6c6aa54442f67f2cfd73b5fac7fec9ec8292ed99606a14f419a2d0e84ac 0.1s done
+#12 exporting manifest list sha256:1772114c3bce2f4916b58da0958a44b6f8e6e6a309d90d7f8d7dae4fad960f39
+#12 exporting manifest list sha256:1772114c3bce2f4916b58da0958a44b6f8e6e6a309d90d7f8d7dae4fad960f39 0.0s done
+#12 naming to docker.io/library/lab-sistema-backend:latest done
+#12 unpacking to docker.io/library/lab-sistema-backend:latest 0.0s done
+#12 DONE 0.2s
+
+#13 [backend] resolving provenance for metadata file
+#13 DONE 0.0s
+ backend  Built
+[1;33mIniciando containers...[0m
+time="2025-06-25T10:29:08-03:00" level=warning msg="C:\\Users\\Gabriel Sakai\\Desktop\\lab-sistema\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Network lab-sistema_lab-network  Creating
+ Network lab-sistema_lab-network  Created
+ Container lab-mysql  Creating
+ Container lab-mysql  Created
+ Container lab-backend  Creating
+ Container lab-backend  Created
+ Container lab-nginx  Creating
+ Container lab-nginx  Created
+ Container lab-mysql  Starting
+ Container lab-mysql  Started
+ Container lab-backend  Starting
+ Container lab-backend  Started
+ Container lab-nginx  Starting
+ Container lab-nginx  Started
+[1;33mAguardando backend inicializar (15 segundos)...[0m
+
+[0;34m📋 FASE 4: VERIFICAR ROTAS REGISTRADAS[0m
+[0;34m=====================================[0m
+[0;36m4.1 - Verificando logs de registro de rotas...[0m
+time="2025-06-25T10:29:36-03:00" level=warning msg="C:\\Users\\Gabriel Sakai\\Desktop\\lab-sistema\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:29:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/:id, PUT} route[39m[38;5;3m +1ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:29:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/:id, DELETE} route[39m[38;5;3m +1ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:29:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/stats/summary, GET} route[39m[38;5;3m +1ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:29:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/:id/reactivate, PUT} route[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:29:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/by-permission/:permission, GET} route[39m[38;5;3m +1ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:29:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/active/list, GET} route[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:29:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/:id/permission, PUT} route[39m[38;5;3m +1ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:29:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/:id/reset-password, PUT} route[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:29:22 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mChavesController {/api/chaves}:[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:29:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/chaves, GET} route[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:29:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/chaves, POST} route[39m[38;5;3m +1ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:29:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/chaves/:id, GET} route[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:29:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/chaves/:id, PUT} route[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:29:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/chaves/:id, DELETE} route[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:29:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/chaves/:id/deactivate, PUT} route[39m[38;5;3m +1ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:29:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/chaves/stats/summary, GET} route[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:29:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/chaves/validate, POST} route[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:29:22 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mLogsController {/api/logs}:[39m[38;5;3m +0ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:29:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/logs, GET} route[39m[38;5;3m +1ms[39m
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:29:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/logs, POST} route[39m[38;5;3m +0ms[39m
+
+[0;36m4.2 - Testando conectividade básica...[0m
+{"success":true,"message":"API está funcionando!","timestamp":"2025-06-25T13:29:36.762Z","status":"OK","environment":"development","jwt_configured":true}
+[0;34m📋 FASE 5: TESTE DIRETO PÓS-REBUILD[0m
+[0;34m==================================[0m
+[0;36m5.1 - Testando endpoint /validate após rebuild...[0m
+Note: Unnecessary use of -X or --request, POST is already inferred.
+* Host localhost:3000 was resolved.
+* IPv6: ::1
+* IPv4: 127.0.0.1
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying [::1]:3000...
+* Connected to localhost (::1) port 3000
+* using HTTP/1.x
+> POST /api/chaves/validate HTTP/1.1
+> Host: localhost:3000
+> User-Agent: curl/8.11.0
+> Accept: */*
+> Content-Type: application/json
+> Content-Length: 32
+> 
+} [32 bytes data]
+* upload completely sent off: 32 bytes
+< HTTP/1.1 401 Unauthorized
+< X-Powered-By: Express
+< Vary: Origin
+< Access-Control-Allow-Credentials: true
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 84
+< ETag: W/"54-ym16sPc6lJnprbfWbjo9wI+IrgM"
+< Date: Wed, 25 Jun 2025 13:29:36 GMT
+< Connection: keep-alive
+< Keep-Alive: timeout=5
+< 
+{ [84 bytes data]
+100   116  100    84  100    32   4368   1664 --:--:-- --:--:-- --:--:--  6105{"message":"Token de acesso não fornecido","error":"Unauthorized","statusCode":401}
+Status HTTP: 401
+
+* Connection #0 to host localhost left intact
+
+[0;36m5.2 - Testando endpoint GET /chaves (deve dar 401)...[0m
+Note: Unnecessary use of -X or --request, GET is already inferred.
+* Host localhost:3000 was resolved.
+* IPv6: ::1
+* IPv4: 127.0.0.1
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying [::1]:3000...
+* Connected to localhost (::1) port 3000
+* using HTTP/1.x
+> GET /api/chaves HTTP/1.1
+> Host: localhost:3000
+> User-Agent: curl/8.11.0
+> Accept: */*
+> Content-Type: application/json
+> 
+* Request completely sent off
+< HTTP/1.1 401 Unauthorized
+< X-Powered-By: Express
+< Vary: Origin
+< Access-Control-Allow-Credentials: true
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 84
+< ETag: W/"54-ym16sPc6lJnprbfWbjo9wI+IrgM"
+< Date: Wed, 25 Jun 2025 13:29:36 GMT
+< Connection: keep-alive
+< Keep-Alive: timeout=5
+< 
+{ [84 bytes data]
+100    84  100    84    0     0  14833      0 --:--:-- --:--:-- --:--:-- 16800{"message":"Token de acesso não fornecido","error":"Unauthorized","statusCode":401}
+Status HTTP: 401
+
+* Connection #0 to host localhost left intact
+
+[0;34m📋 FASE 6: VERIFICAR MIDDLEWARES E INTERCEPTORS[0m
+[0;34m================================================[0m
+[0;36m6.1 - Procurando middlewares globais...[0m
+
+[0;36m6.2 - Procurando interceptors globais...[0m
+
+[0;36m6.3 - Verificando AuthModule para configurações globais...[0m
+[1;33m=== INÍCIO: backend/src/auth/auth.module.ts ===[0m
+import { Module, forwardRef } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
+// ✅ CORREÇÃO: Removido ThrottlerModule - dependência não verificada
+
+// Controllers e Services
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
+import { JwtStrategy } from './jwt.strategy';
+
+// Módulos necessários
+import { UsersModule } from '../users/users.module';
+import { ChavesModule } from '../chaves/chaves.module';
+
+@Module({
+  imports: [
+    // 🔧 CONFIGURAÇÃO DO PASSPORT
+    PassportModule.register({ defaultStrategy: 'jwt' }),
+    
+    // ✅ CORREÇÃO: Rate limiting removido até dependência ser instalada
+    // Para implementar: npm install @nestjs/throttler
+    
+    // 🔧 CONFIGURAÇÃO JWT (local - sobrescreve a global se necessário)
+    JwtModule.register({
+      secret: process.env.JWT_SECRET || 'conductor-secret-key-2025',
+      signOptions: { 
+        expiresIn: process.env.JWT_EXPIRES_IN || '24h' 
+      },
+    }),
+
+    // 📋 DEPENDÊNCIAS DE OUTROS MÓDULOS COM forwardRef
+    forwardRef(() => UsersModule),    // Para acessar UsersService
+    forwardRef(() => ChavesModule),   // Para acessar ChavesService no registro
+  ],
+
+  controllers: [AuthController],
+  
+  providers: [
+    AuthService,    // Serviço principal de autenticação
+    JwtStrategy,    // Estratégia JWT para Passport
+    
+    // ✅ CORREÇÃO: Throttler Guard removido até dependência ser instalada
+  ],
+  
+  exports: [
+    AuthService,    // Exportar para outros módulos que precisem
+    JwtModule,      // Exportar JwtModule para reutilização
+    JwtStrategy,    // Exportar strategy se necessário
+  ],
+})
+export class AuthModule {
+  constructor() {
+    console.log('🔐 AuthModule inicializado com:');
+    console.log('   ✅ Integração de chaves de acesso');
+    console.log('   ⚠️ Rate limiting: instalar @nestjs/throttler para ativar');
+    console.log('   ✅ JWT com refresh token');
+    console.log('   ✅ Logout com invalidação de token');
+    console.log('   ✅ Validação de token robusta');
+  }
+}[1;33m=== FIM: auth.module.ts ===[0m
+
+[0;34m📋 FASE 7: VERIFICAR DECORATORS E METADATA[0m
+[0;34m==========================================[0m
+[0;36m7.1 - Verificando se há decorators customizados...[0m
+backend/src/common/decorators/roles.decorator.ts
+
+[0;36m7.2 - Procurando por skip auth ou public decorators...[0m
+
+[0;34m📋 FASE 8: ANÁLISE MANUAL DO CONTROLADOR[0m
+[0;34m=======================================[0m
+[0;36m8.1 - Mostrando EXATAMENTE como está o controlador atual...[0m
+[1;33m=== INÍCIO: backend/src/chaves/chaves.controller.ts ===[0m
+import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards,HttpCode, HttpStatus } from '@nestjs/common';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { ChavesService } from './chaves.service';
+import { Chave } from './chave.entity';
+
+@Controller('chaves')
+@UseGuards(JwtAuthGuard)
+export class ChavesController {
+  constructor(private readonly chavesService: ChavesService) {}
+
+  @Get()
+  async findAll() {
+    try {
+      const chaves = await this.chavesService.findAll();
+      return {
+        success: true,
+        data: chaves,
+        message: 'Chaves carregadas com sucesso',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Erro ao carregar chaves',
+        error: error.message,
+      };
+    }
+  }
+
+  @Post()
+  async create(@Body() chaveData: Partial<Chave>) {
+    try {
+      const chave = await this.chavesService.create(chaveData);
+      return {
+        success: true,
+        data: chave,
+        message: 'Chave criada com sucesso',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Erro ao criar chave',
+        error: error.message,
+      };
+    }
+  }
+
+  @Get(':id')
+  async findOne(@Param('id') id: number) {
+    try {
+      const chave = await this.chavesService.findById(id);
+[1;33m=== FIM: primeiras 50 linhas ===[0m
+
+[0;36m8.2 - Procurando especificamente pelo método validate...[0m
+152:  @Post('validate')
+153-  @HttpCode(HttpStatus.OK)
+154:  async validateKey(@Body() body: { chave: string }) {
+155-    try {
+156-      console.log('🔑 [VALIDATE] Validando chave:', body.chave);
+157-      
+158-      if (!body || !body.chave || typeof body.chave !== 'string' || !body.chave.trim()) {
+159-        console.log('❌ [VALIDATE] Chave não fornecida ou inválida');
+160-        return {
+161-          success: false,
+162-          isValid: false,
+163-          message: 'Chave não fornecida ou formato inválido',
+164-        };
+165-      }
+166-
+167:      if (!this.chavesService || typeof this.chavesService.validateKey !== 'function') {
+168-        console.error('❌ [VALIDATE] ChavesService não disponível');
+169-        return {
+170-          success: false,
+171-          isValid: false,
+172-          message: 'Serviço de validação temporariamente indisponível',
+173-        };
+174-      }
+175-
+176:      const result = await this.chavesService.validateKey(body.chave.trim());
+177-      
+178-      console.log('🔑 [VALIDATE] Resultado:', result);
+179-      
+180-      if (!result || typeof result !== 'object') {
+181-        console.error('❌ [VALIDATE] Resposta inválida do ChavesService');
+182-        return {
+183-          success: false,
+184-          isValid: false,
+185-          message: 'Erro interno na validação',
+186-        };
+187-      }
+188-      
+189-      return {
+190-        success: true,
+191-        isValid: result.isValid || false,
+192-        permission: result.permission || null,
+193-        message: result.message || 'Validação concluída',
+194-      };
+195-    } catch (error) {
+196-      console.error('❌ [VALIDATE] Erro na validação:', error);
+
+[0;34m📋 FASE 9: DIAGNÓSTICO FINAL[0m
+[0;34m=============================[0m
+[0;35m🔍 INVESTIGAÇÃO GUARDS GLOBAIS FINALIZADA[0m
+[0;35m==========================================[0m
+
+[0;36m📊 PONTOS CRÍTICOS VERIFICADOS:[0m
+[1;33m1. Arquivo atualizado corretamente[0m
+[1;33m2. Guards globais no AppModule[0m
+[1;33m3. Guards globais no main.ts[0m
+[1;33m4. Middlewares e interceptors[0m
+[1;33m5. Rebuild completo do backend[0m
+
+[0;36m🎯 PRÓXIMOS PASSOS:[0m
+[1;33m1. Analisar se problema é guards globais[0m
+[1;33m2. Verificar se arquivo foi realmente atualizado[0m
+[1;33m3. Implementar decorator @Public se necessário[0m
+
+[0;32m✅ Script de investigação avançada concluído![0m
+

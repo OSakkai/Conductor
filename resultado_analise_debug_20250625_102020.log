@@ -1,0 +1,1582 @@
+[0;35m🔥 CONDUCTOR - INVESTIGAÇÃO COMPLETA DO SISTEMA DE CHAVES[0m
+[0;35m================================================================[0m
+
+[0;34m📋 FASE 1: VERIFICAÇÃO DO AMBIENTE[0m
+[0;34m===================================[0m
+[0;36m1.1 - Verificando se containers estão rodando...[0m
+time="2025-06-25T10:20:20-03:00" level=warning msg="C:\\Users\\Gabriel Sakai\\Desktop\\lab-sistema\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+NAME          IMAGE                 COMMAND                  SERVICE   CREATED          STATUS          PORTS
+lab-backend   lab-sistema-backend   "docker-entrypoint.s…"   backend   27 minutes ago   Up 26 minutes   0.0.0.0:3000->3000/tcp
+lab-mysql     mysql:8.0             "docker-entrypoint.s…"   mysql     27 minutes ago   Up 26 minutes   0.0.0.0:3306->3306/tcp, 33060/tcp
+lab-nginx     nginx:alpine          "/docker-entrypoint.…"   nginx     26 minutes ago   Up 26 minutes   0.0.0.0:80->80/tcp
+
+[0;36m1.2 - Verificando logs recentes do backend...[0m
+time="2025-06-25T10:20:20-03:00" level=warning msg="C:\\Users\\Gabriel Sakai\\Desktop\\lab-sistema\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+lab-backend  | }
+lab-backend  | query: SELECT `User`.`id` AS `User_id`, `User`.`nome_usuario` AS `User_nome_usuario`, `User`.`funcao` AS `User_funcao`, `User`.`permissao` AS `User_permissao`, `User`.`email` AS `User_email`, `User`.`celular` AS `User_celular`, `User`.`senha` AS `User_senha`, `User`.`status` AS `User_status`, `User`.`data_criacao` AS `User_data_criacao`, `User`.`data_atualizacao` AS `User_data_atualizacao`, `User`.`ultimo_login` AS `User_ultimo_login`, `User`.`token_recuperacao` AS `User_token_recuperacao`, `User`.`token_expiracao` AS `User_token_expiracao` FROM `usuarios` `User` WHERE ((`User`.`nome_usuario` = ?)) LIMIT 1 -- PARAMETERS: ["expire_user_1750856562"]
+lab-backend  | [95m[Nest] 18  - [39m06/25/2025, 1:03:25 PM [95m  DEBUG[39m [38;5;3m[UsersService] [39m[95mUsuário encontrado por username: expire_user_1750856562[39m
+lab-backend  | ✅ Usuário encontrado: {
+lab-backend  |   id: 40,
+lab-backend  |   nome_usuario: 'expire_user_1750856562',
+lab-backend  |   senha_hash_length: 97,
+lab-backend  |   senha_hash_prefix: '$argon2id$v=19$m=655',
+lab-backend  |   status: 'Ativo'
+lab-backend  | }
+lab-backend  | 🔐 DEBUG - Verificando senha...
+lab-backend  | 🔐 Hash do banco: $argon2id$v=19$m=65536,t=3,p=4$6Uz1VDu9yR1Fm55tojheVA$ITbXjflBNDaR9ZzumH1sqWp9/WOvHGp+hP/v4HUE8z8
+lab-backend  | 🔐 Senha digitada: senha123
+lab-backend  | 🔐 Resultado verificação: true
+lab-backend  | query: SELECT `User`.`id` AS `User_id`, `User`.`nome_usuario` AS `User_nome_usuario`, `User`.`funcao` AS `User_funcao`, `User`.`permissao` AS `User_permissao`, `User`.`email` AS `User_email`, `User`.`celular` AS `User_celular`, `User`.`senha` AS `User_senha`, `User`.`status` AS `User_status`, `User`.`data_criacao` AS `User_data_criacao`, `User`.`data_atualizacao` AS `User_data_atualizacao`, `User`.`ultimo_login` AS `User_ultimo_login`, `User`.`token_recuperacao` AS `User_token_recuperacao`, `User`.`token_expiracao` AS `User_token_expiracao` FROM `usuarios` `User` WHERE `User`.`id` IN (?) -- PARAMETERS: [40]
+lab-backend  | query: START TRANSACTION
+lab-backend  | query: UPDATE `usuarios` SET `ultimo_login` = ?, `data_atualizacao` = CURRENT_TIMESTAMP WHERE `id` IN (?) -- PARAMETERS: ["2025-06-25T13:03:25.457Z",40]
+lab-backend  | query: SELECT `User`.`id` AS `User_id`, `User`.`data_atualizacao` AS `User_data_atualizacao` FROM `usuarios` `User` WHERE `User`.`id` = ? -- PARAMETERS: [40]
+lab-backend  | query: COMMIT
+lab-backend  | ✅ Login realizado com sucesso: expire_user_1750856562
+
+[0;36m1.3 - Testando conectividade básica com backend...[0m
+{"success":true,"message":"API está funcionando!","timestamp":"2025-06-25T13:20:21.413Z","status":"OK","environment":"development","jwt_configured":true}
+[0;34m📋 FASE 2: ANÁLISE DE CÓDIGO - CONTROLLERS[0m
+[0;34m===========================================[0m
+[0;36m2.1 - Examinando ChavesController completo...[0m
+[1;33m=== INÍCIO: backend/src/chaves/chaves.controller.ts ===[0m
+import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards,HttpCode, HttpStatus } from '@nestjs/common';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { ChavesService } from './chaves.service';
+import { Chave } from './chave.entity';
+
+@Controller('chaves')
+@UseGuards(JwtAuthGuard)
+export class ChavesController {
+  constructor(private readonly chavesService: ChavesService) {}
+
+  @Get()
+  async findAll() {
+    try {
+      const chaves = await this.chavesService.findAll();
+      return {
+        success: true,
+        data: chaves,
+        message: 'Chaves carregadas com sucesso',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Erro ao carregar chaves',
+        error: error.message,
+      };
+    }
+  }
+
+  @Post()
+  async create(@Body() chaveData: Partial<Chave>) {
+    try {
+      const chave = await this.chavesService.create(chaveData);
+      return {
+        success: true,
+        data: chave,
+        message: 'Chave criada com sucesso',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Erro ao criar chave',
+        error: error.message,
+      };
+    }
+  }
+
+  @Get(':id')
+  async findOne(@Param('id') id: number) {
+    try {
+      const chave = await this.chavesService.findById(id);
+      
+      if (!chave) {
+        return {
+          success: false,
+          message: 'Chave não encontrada',
+        };
+      }
+
+      return {
+        success: true,
+        data: chave,
+        message: 'Chave encontrada',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Erro ao buscar chave',
+        error: error.message,
+      };
+    }
+  }
+
+  @Put(':id')
+  async update(@Param('id') id: number, @Body() updateData: Partial<Chave>) {
+    try {
+      const chave = await this.chavesService.update(id, updateData);
+      return {
+        success: true,
+        data: chave,
+        message: 'Chave atualizada com sucesso',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Erro ao atualizar chave',
+        error: error.message,
+      };
+    }
+  }
+
+  @Delete(':id')
+  async remove(@Param('id') id: number) {
+    try {
+      await this.chavesService.remove(id);
+      return {
+        success: true,
+        message: 'Chave removida com sucesso',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Erro ao remover chave',
+        error: error.message,
+      };
+    }
+  }
+
+  @Put(':id/deactivate')
+  async deactivate(@Param('id') id: number) {
+    try {
+      await this.chavesService.deactivate(id);
+      return {
+        success: true,
+        message: 'Chave desativada com sucesso',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Erro ao desativar chave',
+        error: error.message,
+      };
+    }
+  }
+
+  @Get('stats/summary')
+  async getStats() {
+    try {
+      const chaves = await this.chavesService.findAll();
+      
+      const stats = {
+        total: chaves.length,
+        ativas: chaves.filter(c => c.status === 'ativa').length,
+        inativas: chaves.filter(c => c.status === 'inativa').length,
+        expiradas: chaves.filter(c => c.status === 'expirada').length,
+        usadas: chaves.filter(c => c.status === 'usada').length,
+      };
+
+      return {
+        success: true,
+        data: stats,
+        message: 'Estatísticas carregadas',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Erro ao carregar estatísticas',
+        error: error.message,
+      };
+    }
+  }
+
+  @Post('validate')
+  @HttpCode(HttpStatus.OK)
+  async validateKey(@Body() body: { chave: string }) {
+    try {
+      console.log('🔑 [VALIDATE] Validando chave:', body.chave);
+      
+      if (!body || !body.chave || typeof body.chave !== 'string' || !body.chave.trim()) {
+        console.log('❌ [VALIDATE] Chave não fornecida ou inválida');
+        return {
+          success: false,
+          isValid: false,
+          message: 'Chave não fornecida ou formato inválido',
+        };
+      }
+
+      if (!this.chavesService || typeof this.chavesService.validateKey !== 'function') {
+        console.error('❌ [VALIDATE] ChavesService não disponível');
+        return {
+          success: false,
+          isValid: false,
+          message: 'Serviço de validação temporariamente indisponível',
+        };
+      }
+
+      const result = await this.chavesService.validateKey(body.chave.trim());
+      
+      console.log('🔑 [VALIDATE] Resultado:', result);
+      
+      if (!result || typeof result !== 'object') {
+        console.error('❌ [VALIDATE] Resposta inválida do ChavesService');
+        return {
+          success: false,
+          isValid: false,
+          message: 'Erro interno na validação',
+        };
+      }
+      
+      return {
+        success: true,
+        isValid: result.isValid || false,
+        permission: result.permission || null,
+        message: result.message || 'Validação concluída',
+      };
+    } catch (error) {
+      console.error('❌ [VALIDATE] Erro na validação:', error);
+      return {
+        success: false,
+        isValid: false,
+        message: 'Erro interno na validação da chave',
+      };
+    }
+  }
+}[1;33m=== FIM: chaves.controller.ts ===[0m
+
+[0;36m2.2 - Examinando AuthController para comparação...[0m
+[1;33m=== INÍCIO: backend/src/auth/auth.controller.ts ===[0m
+import { 
+  Controller, 
+  Post, 
+  Body, 
+  Get, 
+  UseGuards, 
+  Request, 
+  HttpCode, 
+  HttpStatus,
+  Headers,
+} from '@nestjs/common';
+// ✅ CORREÇÃO: Removido ThrottlerGuard - dependência não verificada
+import { AuthService } from './auth.service';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { UsersService } from '../users/users.service';
+import { CreateUserDto } from '../common/dto/create-user.dto';
+import { LoginDto } from '../common/dto/login.dto';
+
+@Controller('auth')
+export class AuthController {
+  constructor(
+    private authService: AuthService,
+    private usersService: UsersService,
+  ) {}
+
+  // ✅ CORREÇÃO: Login sem rate limiting até dependência ser instalada
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  async login(@Body() loginDto: LoginDto) {
+    return this.authService.login(loginDto);
+  }
+
+  // ✅ FASE 1: Registro público
+  @Post('register')
+  @HttpCode(HttpStatus.CREATED)
+  async register(@Body() createUserDto: CreateUserDto) {
+    return this.authService.register(createUserDto);
+  }
+
+  // ✅ FASE 1: Profile protegido
+  @Get('profile')
+  @UseGuards(JwtAuthGuard)
+  async getProfile(@Request() req) {
+    try {
+      // Buscar dados atualizados do usuário
+      const user = await this.usersService.findById(req.user.userId || req.user.sub);
+      
+      if (!user) {
+        return {
+          success: false,
+          message: 'Usuário não encontrado',
+        };
+      }
+
+      // ✅ FASE 2: Resposta padronizada
+      return {
+        success: true,
+        message: 'Perfil do usuário',
+        user: {
+          id: user.id,
+          nome_usuario: user.nome_usuario,
+          email: user.email,
+          celular: user.celular,
+          funcao: user.funcao,
+          permissao: user.permissao,
+          status: user.status,
+          data_criacao: user.data_criacao,
+          ultimo_login: user.ultimo_login,
+        },
+      };
+    } catch (error) {
+      console.error('❌ Erro ao buscar perfil:', error);
+      return {
+        success: false,
+        message: 'Erro ao carregar perfil',
+      };
+    }
+  }
+
+  // ✅ FASE 1: Validação de token pública implementada
+  @Post('validate')
+  @HttpCode(HttpStatus.OK)
+  async validateToken(@Body() body: { token: string }) {
+    if (!body.token) {
+      return {
+        success: false,
+        valid: false,
+        message: 'Token não fornecido',
+      };
+    }
+
+    return this.authService.validateToken(body.token);
+  }
+
+  // ✅ FASE 1: Validação de token via header (alternativa)
+  @Get('validate')
+  @UseGuards(JwtAuthGuard)
+  async validateTokenHeader(@Request() req) {
+    try {
+      const user = await this.usersService.findById(req.user.userId || req.user.sub);
+      
+      if (!user) {
+        return {
+          success: false,
+          valid: false,
+          message: 'Usuário não encontrado',
+        };
+      }
+
+      return {
+        success: true,
+        valid: true,
+        message: 'Token válido',
+        user: {
+          id: user.id,
+          nome_usuario: user.nome_usuario,
+          email: user.email,
+          permissao: user.permissao,
+          funcao: user.funcao,
+          status: user.status,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        valid: false,
+        message: 'Token inválido',
+      };
+    }
+  }
+
+  // ✅ FASE 3: Logout com invalidação de token
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async logout(@Headers('authorization') authHeader: string) {
+    try {
+      // Extrair token do header
+      const token = authHeader?.replace('Bearer ', '');
+      
+      if (!token) {
+        return {
+          success: false,
+          message: 'Token não fornecido',
+        };
+      }
+
+      return this.authService.logout(token);
+    } catch (error) {
+      console.error('❌ Erro no logout:', error);
+      return {
+        success: false,
+        message: 'Erro no logout',
+      };
+    }
+  }
+
+  // ✅ FASE 3: Refresh token
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  async refreshToken(@Body() body: { token: string }) {
+    if (!body.token) {
+      return {
+        success: false,
+        message: 'Token não fornecido',
+      };
+    }
+
+    return this.authService.refreshToken(body.token);
+  }
+
+  // ✅ FASE 4: Health check melhorado
+  @Get('health')
+  async healthCheck() {
+    try {
+      // Testar conexão com banco via UsersService
+      const userCount = await this.usersService.count();
+      
+      return {
+        success: true,
+        message: 'Auth API está funcionando!',
+        timestamp: new Date().toISOString(),
+        status: 'OK',
+        database: 'Connected',
+        userCount,
+        version: '1.0.0',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Auth API com problemas',
+        timestamp: new Date().toISOString(),
+        status: 'ERROR',
+        database: 'Disconnected',
+        error: error.message,
+      };
+    }
+  }
+
+  // ✅ FASE 4: Test endpoint para debugging
+  @Get('test')
+  async test() {
+    return {
+      success: true,
+      message: 'API está funcionando!',
+      timestamp: new Date().toISOString(),
+      status: 'OK',
+      environment: process.env.NODE_ENV || 'development',
+      jwt_configured: !!process.env.JWT_SECRET,
+    };
+  }
+}[1;33m=== FIM: auth.controller.ts ===[0m
+
+[0;34m📋 FASE 3: ANÁLISE DE CÓDIGO - SERVICES[0m
+[0;34m=======================================[0m
+[0;36m3.1 - Examinando ChavesService completo...[0m
+[1;33m=== INÍCIO: backend/src/chaves/chaves.service.ts ===[0m
+// ===============================================
+// CONDUCTOR - CHAVES SERVICE COMPLETO
+// backend/src/chaves/chaves.service.ts
+// ===============================================
+
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Chave, ChaveTipo, ChaveStatus, ChavePermissao } from './chave.entity';
+
+@Injectable()
+export class ChavesService {
+  constructor(
+    @InjectRepository(Chave)
+    private chavesRepository: Repository<Chave>,
+  ) {}
+
+  // ===============================================
+  // MÉTODO CREATE CORRIGIDO COM GERAÇÃO AUTOMÁTICA
+  // ===============================================
+
+  /**
+   * 🔧 Criar nova chave (VERSÃO CORRIGIDA COM GERAÇÃO AUTOMÁTICA)
+   */
+  async create(createChaveDto: any): Promise<Chave> {
+    // ✅ CORREÇÃO: Se não fornecida, gerar código automaticamente
+    if (!createChaveDto.chave) {
+      createChaveDto.chave = this.generateKeyCode();
+    }
+
+    // Validações de negócio
+    if (!createChaveDto.tipo || !createChaveDto.permissao) {
+      throw new BadRequestException('Campos obrigatórios: tipo, permissao');
+    }
+
+    // Verificar se chave já existe
+    let existing = await this.chavesRepository.findOne({
+      where: { chave: createChaveDto.chave }
+    });
+
+    // Se a chave gerada automaticamente já existe, gerar uma nova
+    let attempts = 0;
+    while (existing && attempts < 10) {
+      createChaveDto.chave = this.generateKeyCode();
+      existing = await this.chavesRepository.findOne({
+        where: { chave: createChaveDto.chave }
+      });
+      attempts++;
+    }
+
+    if (existing) {
+      throw new BadRequestException('Não foi possível gerar uma chave única após várias tentativas');
+    }
+
+    // Validar data de expiração para chaves expiráveis
+    if (createChaveDto.tipo === ChaveTipo.EXPIRING) {
+      if (!createChaveDto.data_expiracao) {
+        throw new BadRequestException('Data de expiração é obrigatória para chaves expiráveis');
+      }
+
+      const expirationDate = new Date(createChaveDto.data_expiracao);
+      const now = new Date();
+
+      if (expirationDate <= now) {
+        throw new BadRequestException('Data de expiração deve ser no futuro');
+      }
+    }
+
+    // Definir usos máximos para chaves de uso único
+    if (createChaveDto.tipo === ChaveTipo.SINGLE_USE) {
+      createChaveDto.usos_maximo = 1;
+    }
+
+    // Criar entidade e salvar
+    const novaChave = this.chavesRepository.create({
+      chave: createChaveDto.chave,
+      tipo: createChaveDto.tipo,
+      permissao: createChaveDto.permissao,
+      data_expiracao: createChaveDto.data_expiracao || null,
+      usos_maximo: createChaveDto.usos_maximo || null,
+      descricao: createChaveDto.descricao || null,
+      criado_por: createChaveDto.criado_por || null,
+      status: ChaveStatus.ATIVA,
+      usos_atual: 0
+    });
+
+    const savedChave = await this.chavesRepository.save(novaChave);
+    return savedChave;
+  }
+
+  /**
+   * ✅ NOVO: Gerador de código de chave
+   */
+  private generateKeyCode(): string {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 16; i++) {
+      result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return result;
+  }
+
+  // ===============================================
+  // MÉTODO DE VALIDAÇÃO DE CHAVE
+  // ===============================================
+
+  /**
+   * 🔧 Validar chave de acesso (CORRIGIDO)
+   */
+  async validateKey(chaveCode: string): Promise<{ isValid: boolean; permission?: string; message: string }> {
+    try {
+      const chave = await this.chavesRepository.findOne({
+        where: { chave: chaveCode }
+      });
+
+      if (!chave) {
+        return { 
+          isValid: false, 
+          message: 'Chave não encontrada' 
+        };
+      }
+
+      // Verificar se chave está ativa
+      if (chave.status !== ChaveStatus.ATIVA) {
+        return { 
+          isValid: false, 
+          message: 'Chave inativa ou expirada' 
+        };
+      }
+
+      // Verificar expiração
+      if (chave.tipo === ChaveTipo.EXPIRING && chave.data_expiracao) {
+        const now = new Date();
+        if (now > chave.data_expiracao) {
+          // Marcar como expirada
+          await this.chavesRepository.update(chave.id, {
+            status: ChaveStatus.EXPIRADA
+          });
+          
+          return { 
+            isValid: false, 
+            message: 'Chave expirada' 
+          };
+        }
+      }
+
+      // Verificar usos para chaves de uso único
+      if (chave.tipo === ChaveTipo.SINGLE_USE) {
+        if (chave.usos_atual >= (chave.usos_maximo || 1)) {
+          return { 
+            isValid: false, 
+            message: 'Chave já foi utilizada' 
+          };
+        }
+
+        // Incrementar uso
+        await this.chavesRepository.update(chave.id, {
+          usos_atual: chave.usos_atual + 1,
+          status: chave.usos_atual + 1 >= (chave.usos_maximo || 1) ? ChaveStatus.USADA : ChaveStatus.ATIVA
+        });
+      }
+
+      return { 
+        isValid: true, 
+        permission: chave.permissao,
+        message: 'Chave válida' 
+      };
+
+    } catch (error) {
+      console.error('Erro ao validar chave:', error);
+      return { 
+        isValid: false, 
+        message: 'Erro interno ao validar chave' 
+      };
+    }
+  }
+
+  // ===============================================
+  // MÉTODOS AUXILIARES PARA VERIFICAÇÃO AUTOMÁTICA
+  // ===============================================
+
+  /**
+   * 🆕 Verificar e atualizar status automaticamente
+   */
+  async checkAndUpdateKeyStatus(chave: Chave): Promise<Chave> {
+    let statusChanged = false;
+    const now = new Date();
+
+    // Verificar expiração
+    if (chave.tipo === ChaveTipo.EXPIRING && chave.data_expiracao) {
+      if (now > chave.data_expiracao && chave.status === ChaveStatus.ATIVA) {
+        chave.status = ChaveStatus.EXPIRADA;
+        statusChanged = true;
+      }
+    }
+
+    // Verificar uso único
+    if (chave.tipo === ChaveTipo.SINGLE_USE && chave.usos_atual >= (chave.usos_maximo || 1)) {
+      if (chave.status === ChaveStatus.ATIVA) {
+        chave.status = ChaveStatus.USADA;
+        statusChanged = true;
+      }
+    }
+
+    // Salvar mudanças se necessário
+    if (statusChanged) {
+      await this.chavesRepository.save(chave);
+    }
+
+    return chave;
+  }
+
+  // ===============================================
+  // MÉTODOS CRUD BÁSICOS
+  // ===============================================
+
+  /**
+   * Listar todas as chaves com verificação automática
+   */
+  async findAll(): Promise<Chave[]> {
+    const chaves = await this.chavesRepository.find({
+      order: { data_criacao: 'DESC' }
+    });
+
+    // 🕒 VERIFICAR STATUS DE TODAS AS CHAVES
+    const updatedChaves = [];
+    for (const chave of chaves) {
+      const updatedChave = await this.checkAndUpdateKeyStatus(chave);
+      updatedChaves.push(updatedChave);
+    }
+
+    return updatedChaves;
+  }
+
+  /**
+   * Buscar chave por ID com verificação de status
+   */
+  async findById(id: number): Promise<Chave> {
+    const chave = await this.chavesRepository.findOne({ where: { id } });
+    if (!chave) {
+      throw new NotFoundException(`Chave com ID ${id} não encontrada`);
+    }
+    
+    // 🕒 VERIFICAR STATUS ANTES DE RETORNAR
+    return await this.checkAndUpdateKeyStatus(chave);
+  }
+
+  /**
+   * Buscar chave por código
+   */
+  async findByCode(code: string): Promise<Chave | null> {
+    const chave = await this.chavesRepository.findOne({ where: { chave: code } });
+    if (!chave) {
+      return null;
+    }
+    
+    return await this.checkAndUpdateKeyStatus(chave);
+  }
+
+  /**
+   * Atualizar chave com validações
+   */
+  async update(id: number, updateData: Partial<Chave>): Promise<Chave> {
+    const chave = await this.findById(id);
+    
+    // 🔒 VALIDAÇÕES DE NEGÓCIO
+    if (updateData.status === ChaveStatus.ATIVA) {
+      // Não permitir reativar chaves expiradas
+      if (chave.tipo === ChaveTipo.EXPIRING && chave.data_expiracao) {
+        const now = new Date();
+        if (now > chave.data_expiracao) {
+          throw new BadRequestException('Não é possível reativar uma chave expirada');
+        }
+      }
+      
+      // Não permitir reativar chaves de uso único já usadas
+      if (chave.tipo === ChaveTipo.SINGLE_USE && chave.usos_atual > 0) {
+        throw new BadRequestException('Não é possível reativar uma chave de uso único já utilizada');
+      }
+    }
+
+    // Validar mudança de data de expiração
+    if (updateData.data_expiracao && chave.tipo === ChaveTipo.EXPIRING) {
+      const newExpirationDate = new Date(updateData.data_expiracao);
+      const now = new Date();
+
+      if (newExpirationDate <= now) {
+        throw new BadRequestException('Nova data de expiração deve ser no futuro');
+      }
+    }
+
+    // 🔧 ATUALIZAR NO PADRÃO DO PROJETO
+    await this.chavesRepository.update(id, updateData);
+    return this.findById(id);
+  }
+
+  /**
+   * Desativar chave
+   */
+  async deactivate(id: number): Promise<void> {
+    await this.chavesRepository.update(id, {
+      status: ChaveStatus.INATIVA,
+    });
+  }
+
+  /**
+   * Excluir chave permanentemente
+   */
+  async remove(id: number): Promise<void> {
+    const chave = await this.findById(id);
+    
+    // 🔒 APENAS PERMITIR EXCLUSÃO DE CHAVES USADAS OU EXPIRADAS
+    if (chave.status === ChaveStatus.ATIVA) {
+      throw new BadRequestException('Não é possível excluir uma chave ainda ativa. Desative-a primeiro.');
+    }
+
+    await this.chavesRepository.delete(id);
+  }
+
+  /**
+   * Excluir permanentemente (admin override)
+   */
+  async forceRemove(id: number): Promise<void> {
+    await this.chavesRepository.delete(id);
+  }
+
+  // ===============================================
+  // MÉTODOS DE ESTATÍSTICAS
+  // ===============================================
+
+  /**
+   * Obter estatísticas das chaves
+   */
+  async getStats(): Promise<{
+    total: number;
+    ativas: number;
+    inativas: number;
+    expiradas: number;
+    usadas: number;
+    porTipo: Record<string, number>;
+    porPermissao: Record<string, number>;
+  }> {
+    const chaves = await this.findAll();
+    
+    const stats = {
+      total: chaves.length,
+      ativas: chaves.filter(c => c.status === ChaveStatus.ATIVA).length,
+      inativas: chaves.filter(c => c.status === ChaveStatus.INATIVA).length,
+      expiradas: chaves.filter(c => c.status === ChaveStatus.EXPIRADA).length,
+      usadas: chaves.filter(c => c.status === ChaveStatus.USADA).length,
+      porTipo: {},
+      porPermissao: {}
+    };
+
+    // Estatísticas por tipo
+    Object.values(ChaveTipo).forEach(tipo => {
+      stats.porTipo[tipo] = chaves.filter(c => c.tipo === tipo).length;
+    });
+
+    // Estatísticas por permissão
+    Object.values(ChavePermissao).forEach(permissao => {
+      stats.porPermissao[permissao] = chaves.filter(c => c.permissao === permissao).length;
+    });
+
+    return stats;
+  }
+
+  /**
+   * Buscar chaves por tipo
+   */
+  async findByType(tipo: ChaveTipo): Promise<Chave[]> {
+    const chaves = await this.chavesRepository.find({
+      where: { tipo },
+      order: { data_criacao: 'DESC' }
+    });
+
+    const updatedChaves = [];
+    for (const chave of chaves) {
+      const updatedChave = await this.checkAndUpdateKeyStatus(chave);
+      updatedChaves.push(updatedChave);
+    }
+
+    return updatedChaves;
+  }
+
+  /**
+   * Buscar chaves por status
+   */
+  async findByStatus(status: ChaveStatus): Promise<Chave[]> {
+    const chaves = await this.chavesRepository.find({
+      where: { status },
+      order: { data_criacao: 'DESC' }
+    });
+
+    const updatedChaves = [];
+    for (const chave of chaves) {
+      const updatedChave = await this.checkAndUpdateKeyStatus(chave);
+      updatedChaves.push(updatedChave);
+    }
+
+    return updatedChaves;
+  }
+
+  /**
+   * Buscar chaves por permissão
+   */
+  async findByPermission(permissao: ChavePermissao): Promise<Chave[]> {
+    const chaves = await this.chavesRepository.find({
+      where: { permissao },
+      order: { data_criacao: 'DESC' }
+    });
+
+    const updatedChaves = [];
+    for (const chave of chaves) {
+      const updatedChave = await this.checkAndUpdateKeyStatus(chave);
+      updatedChaves.push(updatedChave);
+    }
+
+    return updatedChaves;
+  }
+
+  /**
+   * Limpar chaves expiradas
+   */
+  async cleanExpiredKeys(): Promise<number> {
+    const expiredKeys = await this.findByStatus(ChaveStatus.EXPIRADA);
+    let cleanedCount = 0;
+
+    for (const key of expiredKeys) {
+      // Apenas limpar chaves expiradas há mais de 30 dias
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      if (key.data_expiracao && key.data_expiracao < thirtyDaysAgo) {
+        await this.forceRemove(key.id);
+        cleanedCount++;
+      }
+    }
+
+    return cleanedCount;
+  }
+
+  /**
+   * Verificar chaves que expiram em breve
+   */
+  async getExpiringKeys(days: number = 7): Promise<Chave[]> {
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + days);
+
+    const chaves = await this.chavesRepository.find({
+      where: {
+        tipo: ChaveTipo.EXPIRING,
+        status: ChaveStatus.ATIVA
+      }
+    });
+
+    return chaves.filter(chave => 
+      chave.data_expiracao && 
+      chave.data_expiracao <= futureDate
+    );
+  }
+
+  // ===============================================
+  // MÉTODOS DE MANUTENÇÃO
+  // ===============================================
+
+  /**
+   * Atualizar status de todas as chaves
+   */
+  async updateAllKeyStatuses(): Promise<number> {
+    const chaves = await this.chavesRepository.find();
+    let updatedCount = 0;
+
+    for (const chave of chaves) {
+      const originalStatus = chave.status;
+      await this.checkAndUpdateKeyStatus(chave);
+      
+      if (chave.status !== originalStatus) {
+        updatedCount++;
+      }
+    }
+
+    return updatedCount;
+  }
+
+  /**
+   * Validar integridade das chaves
+   */
+  async validateIntegrity(): Promise<{
+    valid: boolean;
+    issues: string[];
+  }> {
+    const issues: string[] = [];
+    const chaves = await this.chavesRepository.find();
+
+    for (const chave of chaves) {
+      // Verificar se códigos são únicos
+      const duplicates = await this.chavesRepository.find({
+        where: { chave: chave.chave }
+      });
+
+      if (duplicates.length > 1) {
+        issues.push(`Chave duplicada encontrada: ${chave.chave}`);
+      }
+
+      // Verificar consistência de dados
+      if (chave.tipo === ChaveTipo.EXPIRING && !chave.data_expiracao) {
+        issues.push(`Chave expirável sem data de expiração: ${chave.chave}`);
+      }
+
+      if (chave.tipo === ChaveTipo.SINGLE_USE && (!chave.usos_maximo || chave.usos_maximo !== 1)) {
+        issues.push(`Chave de uso único com usos_maximo incorreto: ${chave.chave}`);
+      }
+    }
+
+    return {
+      valid: issues.length === 0,
+      issues
+    };
+  }
+}[1;33m=== FIM: chaves.service.ts ===[0m
+
+[0;36m3.2 - Examinando entidade Chave...[0m
+[1;33m=== INÍCIO: backend/src/chaves/chave.entity.ts ===[0m
+// ===============================================
+// CONDUCTOR - CHAVE ENTITY COMPLETO ORIGINAL
+// backend/src/chaves/chave.entity.ts
+// ===============================================
+
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
+
+export enum ChaveTipo {
+  PERMANENT = 'permanent',
+  EXPIRING = 'expiring',
+  SINGLE_USE = 'single_use',
+}
+
+export enum ChavePermissao {
+  USUARIO = 'Usuario',
+  OPERADOR = 'Operador',
+  ADMINISTRADOR = 'Administrador',
+  DESENVOLVEDOR = 'Desenvolvedor',
+}
+
+export enum ChaveStatus {
+  ATIVA = 'ativa',
+  INATIVA = 'inativa',
+  USADA = 'usada',
+  EXPIRADA = 'expirada',
+}
+
+@Entity('chaves_acesso') // ✅ NOME CORRETO conforme banco real
+export class Chave {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column({ unique: true, length: 100 })
+  chave: string;
+
+  @Column({
+    type: 'enum',
+    enum: ChaveTipo,
+  })
+  tipo: ChaveTipo;
+
+  @Column({
+    type: 'enum',
+    enum: ChavePermissao,
+  })
+  permissao: ChavePermissao;
+
+  @CreateDateColumn()
+  data_criacao: Date;
+
+  @Column({ nullable: true })
+  data_expiracao: Date;
+
+  @Column({ default: 0 })
+  usos_atual: number;
+
+  @Column({ nullable: true })
+  usos_maximo: number;
+
+  @Column({
+    type: 'enum',
+    enum: ChaveStatus,
+    default: ChaveStatus.ATIVA,
+  })
+  status: ChaveStatus;
+
+  @Column({ type: 'text', nullable: true })
+  descricao: string;
+
+  @Column({ length: 50, nullable: true })
+  criado_por: string;
+}[1;33m=== FIM: chave.entity.ts ===[0m
+
+[0;34m📋 FASE 4: ANÁLISE DE GUARDS E MIDDLEWARES[0m
+[0;34m===========================================[0m
+[0;36m4.1 - Examinando JwtAuthGuard...[0m
+[1;33m=== INÍCIO: backend/src/common/guards/jwt-auth.guard.ts ===[0m
+import { 
+  Injectable, 
+  CanActivate, 
+  ExecutionContext, 
+  UnauthorizedException,
+  Logger 
+} from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { JwtService } from '@nestjs/jwt';
+import { ROLES_KEY } from '../decorators/roles.decorator';
+import { UserPermission } from '../../users/user.entity';
+
+@Injectable()
+export class JwtAuthGuard implements CanActivate {
+  private readonly logger = new Logger(JwtAuthGuard.name);
+
+  constructor(
+    private jwtService: JwtService,
+    private reflector: Reflector,
+  ) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest();
+    const token = this.extractTokenFromHeader(request);
+    
+    if (!token) {
+      this.logger.warn('Token não fornecido na requisição');
+      throw new UnauthorizedException('Token de acesso não fornecido');
+    }
+
+    try {
+      // ✅ CORREÇÃO: Verificar se JWT_SECRET existe
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        this.logger.error('JWT_SECRET não configurado');
+        throw new UnauthorizedException('Configuração de segurança inválida');
+      }
+
+      // ✅ FASE 1: Verificar token com secret correto
+      const payload = await this.jwtService.verifyAsync(token, {
+        secret: jwtSecret,
+      });
+      
+      // ✅ FASE 1: Adicionar payload padronizado ao request
+      request['user'] = {
+        userId: payload.sub,
+        sub: payload.sub, // Compatibilidade
+        nome_usuario: payload.nome_usuario,
+        permissao: payload.permissao,
+        email: payload.email,
+        funcao: payload.funcao,
+      };
+
+      this.logger.debug(`Token válido para usuário: ${payload.nome_usuario}`);
+
+      // ✅ FASE 1: Verificar roles se necessário
+      const requiredRoles = this.reflector.getAllAndOverride<UserPermission[]>(ROLES_KEY, [
+        context.getHandler(),
+        context.getClass(),
+      ]);
+
+      // Se não há roles específicas requeridas, permitir acesso
+      if (!requiredRoles || requiredRoles.length === 0) {
+        this.logger.debug('Nenhuma role específica requerida - acesso permitido');
+        return true;
+      }
+
+      // ✅ FASE 1: CORREÇÃO CRÍTICA - Comparação direta em vez de includes()
+      // Lição do Doc III: includes() não funciona em strings
+      const hasRequiredRole = requiredRoles.some((role) => {
+        const hasRole = payload.permissao === role;
+        this.logger.debug(`Verificando role ${role}: ${hasRole ? '✅' : '❌'}`);
+        return hasRole;
+      });
+
+      if (!hasRequiredRole) {
+        this.logger.warn(`Acesso negado. Usuário ${payload.nome_usuario} (${payload.permissao}) tentou acessar recurso que requer: [${requiredRoles.join(', ')}]`);
+        throw new UnauthorizedException('Permissão insuficiente para acessar este recurso');
+      }
+
+      this.logger.debug(`Acesso autorizado para ${payload.nome_usuario} com permissão ${payload.permissao}`);
+      return true;
+
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      
+      this.logger.error('Erro na validação do token:', error.message);
+      throw new UnauthorizedException('Token inválido ou expirado');
+    }
+  }
+
+  private extractTokenFromHeader(request: any): string | undefined {
+    try {
+      const authHeader = request.headers.authorization;
+      if (!authHeader) {
+        return undefined;
+      }
+
+      const [type, token] = authHeader.split(' ');
+      
+      if (type !== 'Bearer' || !token) {
+        this.logger.warn('Formato de authorization header inválido');
+        return undefined;
+      }
+
+      return token;
+    } catch (error) {
+      this.logger.error('Erro ao extrair token do header:', error);
+      return undefined;
+    }
+  }
+
+  // ✅ FASE 4: Método utilitário para debug
+  private logPermissionCheck(userPermission: string, requiredRoles: UserPermission[]): void {
+    this.logger.debug('=== VERIFICAÇÃO DE PERMISSÃO ===');
+    this.logger.debug(`Usuário possui: ${userPermission}`);
+    this.logger.debug(`Roles requeridas: [${requiredRoles.join(', ')}]`);
+    
+    const permissions = ['Visitante', 'Usuario', 'Operador', 'Administrador', 'Desenvolvedor'];
+    const userLevel = permissions.indexOf(userPermission);
+    this.logger.debug(`Nível do usuário: ${userLevel} (${userPermission})`);
+    
+    requiredRoles.forEach(role => {
+      const requiredLevel = permissions.indexOf(role);
+      const hasAccess = userLevel >= requiredLevel;
+      this.logger.debug(`${role} (nível ${requiredLevel}): ${hasAccess ? '✅' : '❌'}`);
+    });
+  }
+}[1;33m=== FIM: jwt-auth.guard.ts ===[0m
+
+[0;36m4.2 - Verificando decorators de roles...[0m
+[1;33m=== INÍCIO: backend/src/common/decorators/roles.decorator.ts ===[0m
+import { SetMetadata } from '@nestjs/common';
+import { UserPermission } from '../../users/user.entity';
+
+export const ROLES_KEY = 'roles';
+export const Roles = (...roles: UserPermission[]) => SetMetadata(ROLES_KEY, roles);[1;33m=== FIM: roles.decorator.ts ===[0m
+
+[0;34m📋 FASE 5: ANÁLISE DE MÓDULOS E CONFIGURAÇÃO[0m
+[0;34m=============================================[0m
+[0;36m5.1 - Examinando ChavesModule...[0m
+[1;33m=== INÍCIO: backend/src/chaves/chaves.module.ts ===[0m
+// ===============================================
+// CONDUCTOR - CHAVES MODULE CORRIGIDO
+// backend/src/chaves/chaves.module.ts
+// ===============================================
+
+import { Module, forwardRef } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ChavesController } from './chaves.controller';
+import { ChavesService } from './chaves.service';
+import { Chave } from './chave.entity';
+
+@Module({
+  imports: [
+    TypeOrmModule.forFeature([Chave]),
+    // 🔧 REMOVER forwardRef CIRCULAR - AuthModule já importa ChavesModule
+  ],
+  controllers: [ChavesController],
+  providers: [ChavesService],
+  exports: [ChavesService], // Exportar para AuthModule
+})
+export class ChavesModule {
+  constructor() {
+    console.log('🔑 ChavesModule inicializado');
+  }
+}[1;33m=== FIM: chaves.module.ts ===[0m
+
+[0;36m5.2 - Examinando AppModule para verificar importações...[0m
+[1;33m=== INÍCIO: backend/src/app.module.ts ===[0m
+// ===============================================
+// CONDUCTOR - APP MODULE ATUALIZADO
+// backend/src/app.module.ts
+// ===============================================
+
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
+import { JwtModule } from '@nestjs/jwt';
+
+// Configuração do banco
+import { databaseConfig } from './config/database.config';
+
+// Módulos da aplicação
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
+import { ChavesModule } from './chaves/chaves.module';  // 🆕 MÓDULO DE CHAVES
+import { LogsModule } from './logs/logs.module';        // 🆕 MÓDULO DE LOGS
+
+// Controllers e Services globais
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+
+@Module({
+  imports: [
+    // 🔧 CONFIGURAÇÃO DE AMBIENTE
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
+
+    // 🔧 CONFIGURAÇÃO DO BANCO DE DADOS
+    TypeOrmModule.forRoot(databaseConfig),
+
+    // 🔧 CONFIGURAÇÃO JWT GLOBAL
+    JwtModule.register({
+      global: true,
+      secret: process.env.JWT_SECRET || 'conductor-secret-key-2025',
+      signOptions: { 
+        expiresIn: process.env.JWT_EXPIRES_IN || '24h' 
+      },
+    }),
+
+    // 📋 MÓDULOS DA APLICAÇÃO
+    AuthModule,     // Autenticação e autorização
+    UsersModule,    // Gestão de usuários
+    ChavesModule,   // 🆕 Gestão de chaves de acesso
+    LogsModule,     // 🆕 Sistema de logs
+  ],
+
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule {
+  constructor() {
+    console.log('🎼 CONDUCTOR - Sistema inicializado com sucesso!');
+    console.log('⚡ Módulos carregados:');
+    console.log('   📋 AuthModule - Autenticação JWT');
+    console.log('   👥 UsersModule - Gestão de usuários');
+    console.log('   🔑 ChavesModule - Sistema de chaves de acesso');
+    console.log('   📋 LogsModule - Sistema de auditoria');
+    console.log('   💾 Database - MySQL com TypeORM');
+    console.log('');
+    console.log('🚀 Sistema pronto para uso!');
+  }
+}[1;33m=== FIM: app.module.ts ===[0m
+
+[0;34m📋 FASE 6: TESTE DIRETO DOS ENDPOINTS[0m
+[0;34m=====================================[0m
+[0;36m6.1 - Testando endpoint /api/chaves/validate (deve ser público)...[0m
+[1;33mRequest: POST /api/chaves/validate[0m
+{"message":"Token de acesso não fornecido","error":"Unauthorized","statusCode":401}
+Status HTTP: 401
+
+[0;36m6.2 - Testando endpoint sem chave (deve retornar erro específico)...[0m
+[1;33mRequest: POST /api/chaves/validate (sem chave)[0m
+{"message":"Token de acesso não fornecido","error":"Unauthorized","statusCode":401}
+Status HTTP: 401
+
+[0;36m6.3 - Testando endpoint com chave inexistente...[0m
+[1;33mRequest: POST /api/chaves/validate (chave inexistente)[0m
+{"message":"Token de acesso não fornecido","error":"Unauthorized","statusCode":401}
+Status HTTP: 401
+
+[0;36m6.4 - Testando endpoint /api/chaves (deve ser protegido)...[0m
+[1;33mRequest: GET /api/chaves (sem token)[0m
+{"message":"Token de acesso não fornecido","error":"Unauthorized","statusCode":401}
+Status HTTP: 401
+
+[0;34m📋 FASE 7: VERIFICAÇÃO DO BANCO DE DADOS[0m
+[0;34m=======================================[0m
+[0;36m7.1 - Verificando chaves existentes no banco...[0m
+time="2025-06-25T10:20:21-03:00" level=warning msg="C:\\Users\\Gabriel Sakai\\Desktop\\lab-sistema\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+mysql: [Warning] Using a password on the command line interface can be insecure.
+chave	tipo	permissao	status	usos_atual	usos_maximo	data_expiracao	tempo_status
+TEST-EXPIRE-1750856562	expiring	Administrador	expirada	0	NULL	2025-06-25 13:03:13	EXPIRADA
+TEST-SINGLE-1750856562	single_use	Operador	usada	1	1	NULL	SEM_EXPIRACAO
+TEST-PERM-1750856562	permanent	Usuario	ativa	0	NULL	NULL	SEM_EXPIRACAO
+
+[0;36m7.2 - Verificando estrutura da tabela chaves_acesso...[0m
+time="2025-06-25T10:20:22-03:00" level=warning msg="C:\\Users\\Gabriel Sakai\\Desktop\\lab-sistema\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Field	Type	Null	Key	Default	Extra
+id	int	NO	PRI	NULL	auto_increment
+chave	varchar(100)	NO	UNI	NULL	
+tipo	enum('permanent','expiring','single_use')	NO		NULL	
+permissao	enum('Usuario','Operador','Administrador','Desenvolvedor')	NO		NULL	
+data_criacao	datetime(6)	NO		CURRENT_TIMESTAMP(6)	DEFAULT_GENERATED
+data_expiracao	datetime	YES		NULL	
+usos_atual	int	NO		0	
+usos_maximo	int	YES		NULL	
+status	enum('ativa','inativa','usada','expirada')	NO		ativa	
+descricao	text	YES		NULL	
+criado_por	varchar(50)	YES		NULL	
+
+[0;36m7.3 - Verificando últimos logs do sistema...[0m
+time="2025-06-25T10:20:22-03:00" level=warning msg="C:\\Users\\Gabriel Sakai\\Desktop\\lab-sistema\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 2: Table 'lab_sistema.log_usuarios' doesn't exist
+
+
+[0;34m📋 FASE 8: ANÁLISE DE ROTAS E CONFIGURAÇÃO WEB[0m
+[0;34m===============================================[0m
+[0;36m8.1 - Verificando configuração do Nginx...[0m
+[1;33m=== INÍCIO: docker/nginx/nginx.conf ===[0m
+events {
+    worker_connections 1024;
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+    
+    # Configurações de log
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for"';
+    
+    access_log /var/log/nginx/access.log main;
+    error_log /var/log/nginx/error.log warn;
+    
+    # Configurações gerais
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    types_hash_max_size 2048;
+    
+    # Configuração do servidor
+    server {
+        listen 80;
+        server_name localhost;
+        
+        # Servir arquivos estáticos (Frontend)
+        location / {
+            root /usr/share/nginx/html;
+            index index.html login.html;
+            try_files $uri $uri/ /login.html;
+        }
+        
+        # Proxy para API (Backend) - CORRIGIDO!
+        location /api/ {
+            proxy_pass http://lab-backend:3000/api/;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_cache_bypass $http_upgrade;
+            proxy_read_timeout 300;
+            proxy_connect_timeout 300;
+            proxy_send_timeout 300;
+        }
+        
+        # Configurações de segurança
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-XSS-Protection "1; mode=block" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "no-referrer-when-downgrade" always;
+        add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
+    }
+}[1;33m=== FIM: nginx.conf ===[0m
+
+[0;36m8.2 - Verificando docker-compose.yml...[0m
+[1;33m=== INÍCIO: docker-compose.yml ===[0m
+version: '3.8'
+
+services:
+  # Banco de Dados MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: lab-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - lab-network
+
+  # Backend NestJS
+  backend:
+    build: ./backend
+    container_name: lab-backend
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    environment:
+      - NODE_ENV=${NODE_ENV}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_DATABASE=${DB_DATABASE}
+      - JWT_SECRET=${JWT_SECRET}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - lab-network
+
+  # Nginx (Proxy Reverso)
+  nginx:
+    image: nginx:alpine
+    container_name: lab-nginx
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./frontend:/usr/share/nginx/html
+    networks:
+      - lab-network
+
+volumes:
+  mysql_data:
+
+networks:
+  lab-network:
+    driver: bridge[1;33m=== FIM: docker-compose.yml ===[0m
+
+[0;34m📋 FASE 9: VERIFICAÇÃO DE DEPENDÊNCIAS[0m
+[0;34m=======================================[0m
+[0;36m9.1 - Verificando package.json do backend...[0m
+[1;33m=== DEPENDÊNCIAS RELEVANTES ===[0m
+./debug_chaves_system.sh: line 258: jq: command not found
+
+[0;36m9.2 - Verificando se há DTOs para chaves...[0m
+[1;33m=== Procurando arquivos DTO ===[0m
+backend/src/common/dto/create-user.dto.ts
+backend/src/common/dto/login.dto.ts
+
+[0;34m📋 FASE 10: TESTE DE INTEGRAÇÃO COMPLETO[0m
+[0;34m=======================================[0m
+[0;36m10.1 - Obtendo token de administrador para testes...[0m
+./debug_chaves_system.sh: line 279: jq: command not found
+[0;31m❌ Não foi possível obter token de administrador[0m
+
+[0;34m📋 FASE 11: VERIFICAÇÃO DE LOGS E ERROS[0m
+[0;34m=======================================[0m
+[0;36m11.1 - Logs do backend dos últimos 2 minutos...[0m
+time="2025-06-25T10:20:23-03:00" level=warning msg="C:\\Users\\Gabriel Sakai\\Desktop\\lab-sistema\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+lab-backend  | [33m[Nest] 18  - [39m06/25/2025, 1:20:21 PM [33m   WARN[39m [38;5;3m[JwtAuthGuard] [39m[33mToken não fornecido na requisição[39m
+lab-backend  | [33m[Nest] 18  - [39m06/25/2025, 1:20:21 PM [33m   WARN[39m [38;5;3m[JwtAuthGuard] [39m[33mToken não fornecido na requisição[39m
+lab-backend  | [33m[Nest] 18  - [39m06/25/2025, 1:20:21 PM [33m   WARN[39m [38;5;3m[JwtAuthGuard] [39m[33mToken não fornecido na requisição[39m
+lab-backend  | [33m[Nest] 18  - [39m06/25/2025, 1:20:21 PM [33m   WARN[39m [38;5;3m[JwtAuthGuard] [39m[33mToken não fornecido na requisição[39m
+lab-backend  | 🔐 Tentativa de login para: docker_user teste
+lab-backend  | 🔐 DEBUG - Dados recebidos: {
+lab-backend  |   nome_usuario: 'docker_user teste',
+lab-backend  |   senha_length: 6,
+lab-backend  |   senha_primeiro_char: '1',
+lab-backend  |   senha_ultimo_char: '6'
+lab-backend  | }
+lab-backend  | query: SELECT `User`.`id` AS `User_id`, `User`.`nome_usuario` AS `User_nome_usuario`, `User`.`funcao` AS `User_funcao`, `User`.`permissao` AS `User_permissao`, `User`.`email` AS `User_email`, `User`.`celular` AS `User_celular`, `User`.`senha` AS `User_senha`, `User`.`status` AS `User_status`, `User`.`data_criacao` AS `User_data_criacao`, `User`.`data_atualizacao` AS `User_data_atualizacao`, `User`.`ultimo_login` AS `User_ultimo_login`, `User`.`token_recuperacao` AS `User_token_recuperacao`, `User`.`token_expiracao` AS `User_token_expiracao` FROM `usuarios` `User` WHERE ((`User`.`nome_usuario` = ?)) LIMIT 1 -- PARAMETERS: ["docker_user teste"]
+lab-backend  | [95m[Nest] 18  - [39m06/25/2025, 1:20:23 PM [95m  DEBUG[39m [38;5;3m[UsersService] [39m[95mUsuário encontrado por username: docker_user teste[39m
+lab-backend  | ✅ Usuário encontrado: {
+lab-backend  |   id: 4,
+lab-backend  |   nome_usuario: 'docker_user teste',
+lab-backend  |   senha_hash_length: 97,
+lab-backend  |   senha_hash_prefix: '$argon2id$v=19$m=655',
+lab-backend  |   status: 'Ativo'
+lab-backend  | }
+lab-backend  | 🔐 DEBUG - Verificando senha...
+lab-backend  | 🔐 Hash do banco: $argon2id$v=19$m=65536,t=3,p=4$brSr0ux68PBg6PjjUVrwVA$juFSOYyAojLyLeBouG9QP3KlHDIjlxZUdtRgS54u5uU
+lab-backend  | 🔐 Senha digitada: 123456
+lab-backend  | 🔐 Resultado verificação: false
+lab-backend  | ❌ Senha incorreta para: docker_user teste
+lab-backend  | ❌ Erro no login: Credenciais inválidas
+
+[0;36m11.2 - Verificando se há erros específicos relacionados a chaves...[0m
+lab-backend  | 🔑 [CHAVE] Validando chave: TEST-EXPIRED-1750856562
+lab-backend  | query: SELECT `Chave`.`id` AS `Chave_id`, `Chave`.`chave` AS `Chave_chave`, `Chave`.`tipo` AS `Chave_tipo`, `Chave`.`permissao` AS `Chave_permissao`, `Chave`.`data_criacao` AS `Chave_data_criacao`, `Chave`.`data_expiracao` AS `Chave_data_expiracao`, `Chave`.`usos_atual` AS `Chave_usos_atual`, `Chave`.`usos_maximo` AS `Chave_usos_maximo`, `Chave`.`status` AS `Chave_status`, `Chave`.`descricao` AS `Chave_descricao`, `Chave`.`criado_por` AS `Chave_criado_por` FROM `chaves_acesso` `Chave` WHERE ((`Chave`.`chave` = ?)) LIMIT 1 -- PARAMETERS: ["TEST-EXPIRED-1750856562"]
+lab-backend  | ❌ [CHAVE] Chave inválida: Chave não encontrada
+lab-backend  | ❌ [CHAVE] Erro ao validar chave: BadRequestException: Chave de acesso inválida: Chave não encontrada
+lab-backend  |     message: 'Chave de acesso inválida: Chave não encontrada',
+lab-backend  | ❌ Erro no registro: Chave de acesso inválida: Chave não encontrada
+lab-backend  | 📝 Tentativa de registro para: no_key_user_1750856562
+lab-backend  |   nome_usuario: 'no_key_user_1750856562',
+lab-backend  |   email: 'nokey_1750856562@test.com',
+lab-backend  |   chave_acesso: 'NENHUMA'
+lab-backend  | ⚠️ [CHAVE] Nenhuma chave fornecida - usuário será Visitante
+lab-backend  | query: SELECT `User`.`id` AS `User_id`, `User`.`nome_usuario` AS `User_nome_usuario`, `User`.`funcao` AS `User_funcao`, `User`.`permissao` AS `User_permissao`, `User`.`email` AS `User_email`, `User`.`celular` AS `User_celular`, `User`.`senha` AS `User_senha`, `User`.`status` AS `User_status`, `User`.`data_criacao` AS `User_data_criacao`, `User`.`data_atualizacao` AS `User_data_atualizacao`, `User`.`ultimo_login` AS `User_ultimo_login`, `User`.`token_recuperacao` AS `User_token_recuperacao`, `User`.`token_expiracao` AS `User_token_expiracao` FROM `usuarios` `User` WHERE ((`User`.`nome_usuario` = ?)) LIMIT 1 -- PARAMETERS: ["no_key_user_1750856562"]
+lab-backend  | query: SELECT `User`.`id` AS `User_id`, `User`.`nome_usuario` AS `User_nome_usuario`, `User`.`funcao` AS `User_funcao`, `User`.`permissao` AS `User_permissao`, `User`.`email` AS `User_email`, `User`.`celular` AS `User_celular`, `User`.`senha` AS `User_senha`, `User`.`status` AS `User_status`, `User`.`data_criacao` AS `User_data_criacao`, `User`.`data_atualizacao` AS `User_data_atualizacao`, `User`.`ultimo_login` AS `User_ultimo_login`, `User`.`token_recuperacao` AS `User_token_recuperacao`, `User`.`token_expiracao` AS `User_token_expiracao` FROM `usuarios` `User` WHERE ((`User`.`email` = ?)) LIMIT 1 -- PARAMETERS: ["nokey_1750856562@test.com"]
+lab-backend  | query: SELECT `User`.`id` AS `User_id`, `User`.`nome_usuario` AS `User_nome_usuario`, `User`.`funcao` AS `User_funcao`, `User`.`permissao` AS `User_permissao`, `User`.`email` AS `User_email`, `User`.`celular` AS `User_celular`, `User`.`senha` AS `User_senha`, `User`.`status` AS `User_status`, `User`.`data_criacao` AS `User_data_criacao`, `User`.`data_atualizacao` AS `User_data_atualizacao`, `User`.`ultimo_login` AS `User_ultimo_login`, `User`.`token_recuperacao` AS `User_token_recuperacao`, `User`.`token_expiracao` AS `User_token_expiracao` FROM `usuarios` `User` WHERE ((`User`.`nome_usuario` = ?)) LIMIT 1 -- PARAMETERS: ["no_key_user_1750856562"]
+lab-backend  | query: SELECT `User`.`id` AS `User_id`, `User`.`nome_usuario` AS `User_nome_usuario`, `User`.`funcao` AS `User_funcao`, `User`.`permissao` AS `User_permissao`, `User`.`email` AS `User_email`, `User`.`celular` AS `User_celular`, `User`.`senha` AS `User_senha`, `User`.`status` AS `User_status`, `User`.`data_criacao` AS `User_data_criacao`, `User`.`data_atualizacao` AS `User_data_atualizacao`, `User`.`ultimo_login` AS `User_ultimo_login`, `User`.`token_recuperacao` AS `User_token_recuperacao`, `User`.`token_expiracao` AS `User_token_expiracao` FROM `usuarios` `User` WHERE ((`User`.`email` = ?)) LIMIT 1 -- PARAMETERS: ["nokey_1750856562@test.com"]
+lab-backend  | query: INSERT INTO `usuarios`(`id`, `nome_usuario`, `funcao`, `permissao`, `email`, `celular`, `senha`, `status`, `data_criacao`, `data_atualizacao`, `ultimo_login`, `token_recuperacao`, `token_expiracao`) VALUES (DEFAULT, ?, ?, ?, ?, DEFAULT, ?, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT) -- PARAMETERS: ["no_key_user_1750856562","Estagiario","Visitante","nokey_1750856562@test.com","$argon2id$v=19$m=65536,t=3,p=4$ZAcOD/SU8EqiC3JEhqnFEw$88Ahq8QVhs7an5BKyWNVjU4N0yP1tKBmFNAdr4chaF0"]
+lab-backend  | [32m[Nest] 18  - [39m06/25/2025, 1:03:23 PM [32m    LOG[39m [38;5;3m[UsersService] [39m[32mUsuário criado: no_key_user_1750856562 (ID: 41)[39m
+lab-backend  |   nome_usuario: 'no_key_user_1750856562',
+lab-backend  |   nome_usuario: 'no_key_user_1750856562',
+lab-backend  |   email: 'nokey_1750856562@test.com',
+
+[0;34m📋 FASE 12: RESUMO E DIAGNÓSTICO[0m
+[0;34m=================================[0m
+[0;35m🔍 INVESTIGAÇÃO COMPLETA FINALIZADA[0m
+[0;35m===================================[0m
+
+[0;36m📊 PONTOS CRÍTICOS PARA ANÁLISE:[0m
+[1;33m1. Configuração de guards no ChavesController[0m
+[1;33m2. Método validateChave no ChavesService[0m
+[1;33m3. Status HTTP retornados pelos endpoints[0m
+[1;33m4. Configuração de rotas no módulo[0m
+[1;33m5. Comparação com endpoints que funcionam (auth)[0m
+
+[0;36m🎯 PRÓXIMOS PASSOS:[0m
+[1;33m1. Analisar output deste script[0m
+[1;33m2. Identificar discrepâncias entre documentação e código[0m
+[1;33m3. Implementar correções baseadas em evidências[0m
+[1;33m4. Re-executar testes para validar correções[0m
+
+[0;32m✅ Script de investigação concluído![0m
+[0;36m📝 Salve o output deste script para análise detalhada.[0m
+

@@ -1,14 +1,25 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards,HttpCode, HttpStatus } from '@nestjs/common';
+// ===============================================
+// CONDUCTOR - CHAVES CONTROLLER CORRIGIDO
+// backend/src/chaves/chaves.controller.ts
+// CORREÇÃO CRÍTICA: Endpoint /validate público
+// ===============================================
+
+import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { ChavesService } from './chaves.service';
 import { Chave } from './chave.entity';
 
 @Controller('chaves')
-@UseGuards(JwtAuthGuard)
+// ❌ REMOVIDO: @UseGuards(JwtAuthGuard) - Guard será aplicado individualmente
 export class ChavesController {
   constructor(private readonly chavesService: ChavesService) {}
 
+  // ===============================================
+  // ENDPOINTS PROTEGIDOS (requerem autenticação)
+  // ===============================================
+
   @Get()
+  @UseGuards(JwtAuthGuard) // ✅ Guard aplicado individualmente
   async findAll() {
     try {
       const chaves = await this.chavesService.findAll();
@@ -27,6 +38,7 @@ export class ChavesController {
   }
 
   @Post()
+  @UseGuards(JwtAuthGuard) // ✅ Guard aplicado individualmente
   async create(@Body() chaveData: Partial<Chave>) {
     try {
       const chave = await this.chavesService.create(chaveData);
@@ -45,6 +57,7 @@ export class ChavesController {
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard) // ✅ Guard aplicado individualmente
   async findOne(@Param('id') id: number) {
     try {
       const chave = await this.chavesService.findById(id);
@@ -71,6 +84,7 @@ export class ChavesController {
   }
 
   @Put(':id')
+  @UseGuards(JwtAuthGuard) // ✅ Guard aplicado individualmente
   async update(@Param('id') id: number, @Body() updateData: Partial<Chave>) {
     try {
       const chave = await this.chavesService.update(id, updateData);
@@ -89,6 +103,7 @@ export class ChavesController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard) // ✅ Guard aplicado individualmente
   async remove(@Param('id') id: number) {
     try {
       await this.chavesService.remove(id);
@@ -106,6 +121,7 @@ export class ChavesController {
   }
 
   @Put(':id/deactivate')
+  @UseGuards(JwtAuthGuard) // ✅ Guard aplicado individualmente
   async deactivate(@Param('id') id: number) {
     try {
       await this.chavesService.deactivate(id);
@@ -123,6 +139,7 @@ export class ChavesController {
   }
 
   @Get('stats/summary')
+  @UseGuards(JwtAuthGuard) // ✅ Guard aplicado individualmente
   async getStats() {
     try {
       const chaves = await this.chavesService.findAll();
@@ -149,8 +166,13 @@ export class ChavesController {
     }
   }
 
+  // ===============================================
+  // ENDPOINT PÚBLICO (NÃO requer autenticação)
+  // ===============================================
+
   @Post('validate')
   @HttpCode(HttpStatus.OK)
+  // ✅ CORREÇÃO CRÍTICA: SEM @UseGuards() - Endpoint público conforme DOC 2
   async validateKey(@Body() body: { chave: string }) {
     try {
       console.log('🔑 [VALIDATE] Validando chave:', body.chave);
